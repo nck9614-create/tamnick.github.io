@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>智慧車輛進廠管理系統 (永久儲存版)</title>
+    <title>智慧車輛進廠管理系統 (登入與臉部辨識版)</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -29,6 +29,46 @@
             padding: 16px 16px 80px 16px;
             display: flex;
             justify-content: center;
+        }
+
+        /* 登入畫面樣式 */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-color);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .login-header h2 {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .login-header p {
+            font-size: 13px;
+            color: #64748b;
         }
 
         .container {
@@ -89,6 +129,11 @@
         .header-btn.primary {
             background: #10b981;
             border-color: #059669;
+        }
+
+        .header-btn.logout {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.5);
         }
 
         .stats-grid {
@@ -347,6 +392,8 @@
         .btn:hover { background: var(--primary-hover); }
         .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
         .btn-line { background: var(--line-green); color: white; width: 100%; }
+        .btn-biometric { background: #7c3aed; color: white; width: 100%; margin-top: 8px; }
+        .btn-biometric:hover { background: #6d28d9; }
 
         .car-diagram-box {
             background: #f8fafc;
@@ -437,17 +484,39 @@
 </head>
 <body>
 
+<!-- 登入畫面 -->
+<div id="login-screen">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>🚗 智慧車輛進廠管理</h2>
+            <p>請先登入專員帳號以使用系統</p>
+        </div>
+        <div class="form-group">
+            <label>帳號</label>
+            <input type="text" id="login-user" value="tam" placeholder="請輸入帳號">
+        </div>
+        <div class="form-group">
+            <label>密碼</label>
+            <input type="password" id="login-pass" value="tam" placeholder="請輸入密碼">
+        </div>
+        <button class="btn" style="width:100%;" onclick="handleLogin()">🔐 帳密登入</button>
+        <button class="btn btn-biometric" onclick="handleBiometricLogin()">👤 使用手機臉部辨識 / 指紋登入</button>
+        <div id="login-msg" class="status-msg">預設帳號：tam ｜ 密碼：tam</div>
+    </div>
+</div>
+
 <div class="container">
     <div class="header-bar">
         <div class="header-top">
             <div class="header-title">
-                <h1>智慧車輛進廠管理</h1>
-                <p>本地永久儲存版 (不怕 App 滑掉)</p>
+                <h1 id="welcome-title">智慧車輛進廠管理</h1>
+                <p>已登入專員：<span id="current-staff-name">tam</span> (永久儲存版)</p>
             </div>
             <div class="header-actions">
                 <label for="ocr-file-input" class="header-btn primary">📷 拍照辨識</label>
                 <input type="file" id="ocr-file-input" accept="image/*" style="display:none;" onchange="processLicensePlate(event)">
                 <button class="header-btn" onclick="openModal()">+ 手動</button>
+                <button class="header-btn logout" onclick="handleLogout()">登出</button>
             </div>
         </div>
     </div>
@@ -475,8 +544,8 @@
         </div>
 
         <div class="info-card">
-            <h3>🛡️ 資料安全防護</h3>
-            <p>已啟用瀏覽器永久記憶功能！即使把網頁 App 滑掉重開、或是關閉瀏覽器，所有輸入的車牌與車損資料都會好好保留在手機裡。</p>
+            <h3>🛡️ 安全登入與生物辨識</h3>
+            <p>已成功整合您的專員帳號與手機 Face ID / 指紋硬體安全驗證。資料會自動保存在本地，滑掉 App 也不會遺失！</p>
         </div>
     </div>
 
@@ -534,7 +603,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="form-group">
                 <label>接車專員</label>
-                <input type="text" id="field-staff" value="林專員" placeholder="林專員">
+                <input type="text" id="field-staff" value="tam" placeholder="tam">
             </div>
             <div class="form-group">
                 <label>進廠里程數 (km)</label>
@@ -629,23 +698,87 @@
     let records = [];
     let currentDamagedParts = [];
     let uploadedPhotos = [];
+    let currentUser = localStorage.getItem('current_user') || null;
 
     window.onload = function() {
-        // 從手機/電腦瀏覽器讀取儲存的資料
+        if (currentUser) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('current-staff-name').innerText = currentUser;
+        }
+        loadStorageData();
+    };
+
+    function loadStorageData() {
         const savedData = localStorage.getItem('car_records');
         if (savedData) {
-            try {
-                records = JSON.parse(savedData);
-            } catch (e) {
-                records = [];
-            }
+            try { records = JSON.parse(savedData); } catch (e) { records = []; }
         }
         renderRecords();
         updateStats();
-    };
+    }
 
     function saveDataToStorage() {
         localStorage.setItem('car_records', JSON.stringify(records));
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('login-user').value.trim();
+        const p = document.getElementById('login-pass').value.trim();
+
+        if (u === 'tam' && p === 'tam') {
+            currentUser = u;
+            localStorage.setItem('current_user', u);
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('current-staff-name').innerText = u;
+            document.getElementById('field-staff').value = u;
+            loadStorageData();
+        } else {
+            document.getElementById('login-msg').innerText = "❌ 帳號或密碼錯誤 (預設 tam / tam)";
+        }
+    }
+
+    async function handleBiometricLogin() {
+        const msgEl = document.getElementById('login-msg');
+        if (!window.PublicKeyCredential) {
+            msgEl.innerText = "❌ 此裝置或瀏覽器不支援生物辨識 (請使用 https)";
+            return;
+        }
+
+        try {
+            msgEl.innerText = "⏳ 正在啟動手機臉部辨識 / 指紋解鎖...";
+            const publicKey = {
+                challenge: new Uint8Array([21, 31, 105, 43, 10, 95, 123, 9]),
+                rp: { name: "智慧車輛進廠管理" },
+                user: {
+                    id: new Uint8Array([1, 2, 3, 4]),
+                    name: "tam",
+                    displayName: "tam"
+                },
+                pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                timeout: 60000,
+                attestation: "direct"
+            };
+
+            // 呼叫裝置內建的生物辨識 (Face ID / Touch ID / Windows Hello)
+            await navigator.credentials.create({ publicKey });
+            
+            currentUser = "tam";
+            localStorage.setItem('current_user', currentUser);
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('current-staff-name').innerText = currentUser;
+            document.getElementById('field-staff').value = currentUser;
+            loadStorageData();
+        } catch (err) {
+            msgEl.innerText = "⚠️ 生物辨識未完成或取消，請改用上方帳密登入";
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('current_user');
+        currentUser = null;
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('login-pass').value = '';
+        document.getElementById('login-msg').innerText = "預設帳號：tam ｜ 密碼：tam";
     }
 
     function switchTab(tabId, btn) {
@@ -664,12 +797,13 @@
         document.getElementById('form-modal').style.display = 'flex';
         document.getElementById('edit-index').value = editIndex;
         document.getElementById('ocr-status').innerText = '';
+        document.getElementById('field-staff').value = currentUser || 'tam';
 
         if (editIndex > -1) {
             document.getElementById('modal-title').innerText = "編輯車輛進廠接待登記表";
             const rec = records[editIndex];
             document.getElementById('field-plate').value = rec.plate;
-            document.getElementById('field-staff').value = rec.staff || '林專員';
+            document.getElementById('field-staff').value = rec.staff || currentUser;
             document.getElementById('field-owner').value = rec.owner || '';
             document.getElementById('field-mileage').value = rec.mileage || '';
             document.getElementById('chk-wash').checked = rec.wash;
@@ -787,7 +921,7 @@
             return;
         }
 
-        const staff = document.getElementById('field-staff').value.trim() || '林專員';
+        const staff = document.getElementById('field-staff').value.trim() || currentUser || 'tam';
         const owner = document.getElementById('field-owner').value.trim();
         const mileage = document.getElementById('field-mileage').value.trim();
         const wash = document.getElementById('chk-wash').checked;
@@ -813,7 +947,7 @@
             records.unshift(recordData);
         }
 
-        saveDataToStorage(); // 立即寫入本地永久儲存
+        saveDataToStorage();
         renderRecords();
         updateStats();
         closeModal();
@@ -861,7 +995,7 @@
 
             card.innerHTML = `
                 <div class="record-header">
-                    <div class="record-plate">${rec.plate} <span style="font-size: 13px; font-weight: normal; color: #64748b;">專員：${rec.staff || '林專員'}</span></div>
+                    <div class="record-plate">${rec.plate} <span style="font-size: 13px; font-weight: normal; color: #64748b;">專員：${rec.staff || 'tam'}</span></div>
                     <div class="record-tags">${tagsHtml}</div>
                 </div>
                 <div class="record-body">
