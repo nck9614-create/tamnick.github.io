@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>智慧車輛進廠管理系統 (專業車損分區版)</title>
+    <title>智慧車輛進廠管理系統 (永久儲存版)</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -348,7 +348,6 @@
         .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
         .btn-line { background: var(--line-green); color: white; width: 100%; }
 
-        /* 擬真車體互動外觀點檢樣式 */
         .car-diagram-box {
             background: #f8fafc;
             border: 1px solid var(--border);
@@ -375,7 +374,6 @@
             display: block;
         }
 
-        /* 可點擊的 SVG 區塊樣式 */
         .car-part {
             fill: #cbd5e1;
             stroke: #475569;
@@ -384,15 +382,8 @@
             transition: fill 0.2s, stroke 0.2s;
         }
 
-        .car-part:hover {
-            fill: #94a3b8;
-        }
-
-        .car-part.damaged {
-            fill: #fecaca !important;
-            stroke: #ef4444 !important;
-            stroke-width: 3;
-        }
+        .car-part:hover { fill: #94a3b8; }
+        .car-part.damaged { fill: #fecaca !important; stroke: #ef4444 !important; stroke-width: 3; }
 
         .parts-grid {
             display: grid;
@@ -413,17 +404,8 @@
             font-weight: normal;
         }
 
-        .part-checkbox-label input {
-            width: auto;
-            margin: 0;
-        }
-
-        .part-checkbox-label.checked {
-            border-color: #ef4444;
-            background: #fef2f2;
-            color: #991b1b;
-            font-weight: 600;
-        }
+        .part-checkbox-label input { width: auto; margin: 0; }
+        .part-checkbox-label.checked { border-color: #ef4444; background: #fef2f2; color: #991b1b; font-weight: 600; }
 
         .photo-grid {
             display: grid;
@@ -440,41 +422,17 @@
             border: 1px solid var(--border);
         }
 
-        .photo-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; }
         .photo-remove {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
-            cursor: pointer;
+            position: absolute; top: 2px; right: 2px;
+            background: rgba(0,0,0,0.6); color: white;
+            border: none; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 10px; cursor: pointer;
         }
 
-        .status-msg {
-            font-size: 12px;
-            color: #64748b;
-            text-align: center;
-            margin-top: 4px;
-        }
-
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+        .status-msg { font-size: 12px; color: #64748b; text-align: center; margin-top: 4px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; gap: 16px; }
     </style>
 </head>
 <body>
@@ -484,7 +442,7 @@
         <div class="header-top">
             <div class="header-title">
                 <h1>智慧車輛進廠管理</h1>
-                <p>專業車損分區點檢與聯網版</p>
+                <p>本地永久儲存版 (不怕 App 滑掉)</p>
             </div>
             <div class="header-actions">
                 <label for="ocr-file-input" class="header-btn primary">📷 拍照辨識</label>
@@ -500,15 +458,15 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-title">今日總接車</div>
-                <div class="stat-value blue" id="stat-total">1 台</div>
+                <div class="stat-value blue" id="stat-total">0 台</div>
             </div>
             <div class="stat-card">
                 <div class="stat-title">現場等候中</div>
-                <div class="stat-value green" id="stat-waiting">1 台</div>
+                <div class="stat-value green" id="stat-waiting">0 台</div>
             </div>
             <div class="stat-card">
                 <div class="stat-title">需洗車服務</div>
-                <div class="stat-value blue" id="stat-wash">1 台</div>
+                <div class="stat-value blue" id="stat-wash">0 台</div>
             </div>
             <div class="stat-card">
                 <div class="stat-title">外觀有傷紀錄</div>
@@ -517,8 +475,8 @@
         </div>
 
         <div class="info-card">
-            <h3>⚡ 系統操作提示</h3>
-            <p>點擊上方「📷 拍照辨識」可自動擷取車牌；點擊「+ 手動」可展開詳細登記表，內建與您參考圖完全一致的車身分區點選與細部配件勾選功能，支援一鍵複製 LINE 交接報告！</p>
+            <h3>🛡️ 資料安全防護</h3>
+            <p>已啟用瀏覽器永久記憶功能！即使把網頁 App 滑掉重開、或是關閉瀏覽器，所有輸入的車牌與車損資料都會好好保留在手機裡。</p>
         </div>
     </div>
 
@@ -526,7 +484,7 @@
     <div id="tab-records" class="tab-content">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 15px; font-weight: bold; color: #1e293b;">進廠車輛接待清單</span>
-            <span style="font-size: 13px; color: #64748b;" id="record-count-label">共 1 筆記錄</span>
+            <span style="font-size: 13px; color: #64748b;" id="record-count-label">共 0 筆記錄</span>
         </div>
         <div id="records-list-container"></div>
     </div>
@@ -589,7 +547,7 @@
             <input type="text" id="field-owner" placeholder="例如：陳先生 0912-345678">
         </div>
 
-        <!-- 外觀受損標記與照片 (與範例圖高度一致) -->
+        <!-- 外觀受損標記與照片 -->
         <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <label style="margin:0;">6. 外觀受損標記與照片</label>
@@ -604,39 +562,30 @@
                 <div style="text-align:center; font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 4px;">▲ 車頭 (FRONT) ▲</div>
                 <div class="car-top-container">
                     <svg class="car-svg" viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg">
-                        <!-- 前保桿 -->
                         <path id="part-front_bumper" class="car-part" d="M 45 10 Q 100 0 155 10 L 150 50 L 50 50 Z" onclick="toggleCarPart('front_bumper')"/>
                         <text x="100" y="33" font-size="11" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">前保桿</text>
 
-                        <!-- 引擎蓋 -->
                         <path id="part-hood" class="car-part" d="M 52 58 L 148 58 L 145 125 L 55 125 Z" onclick="toggleCarPart('hood')"/>
                         <text x="100" y="95" font-size="11" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">引擎蓋</text>
 
-                        <!-- 左前門 -->
                         <path id="part-left_front_door" class="car-part" d="M 12 133 L 48 133 L 48 200 L 15 195 Z" onclick="toggleCarPart('left_front_door')"/>
                         <text x="30" y="170" font-size="10" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">左前門</text>
 
-                        <!-- 右前門 -->
                         <path id="part-right_front_door" class="car-part" d="M 188 133 L 152 133 L 152 200 L 185 195 Z" onclick="toggleCarPart('right_front_door')"/>
                         <text x="170" y="170" font-size="10" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">右前門</text>
 
-                        <!-- 車頂 -->
                         <path id="part-roof" class="car-part" d="M 55 133 L 145 133 L 145 220 L 55 220 Z" onclick="toggleCarPart('roof')"/>
                         <text x="100" y="180" font-size="12" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">車頂</text>
 
-                        <!-- 左後門 -->
                         <path id="part-left_rear_door" class="car-part" d="M 15 203 L 48 203 L 48 270 L 18 260 Z" onclick="toggleCarPart('left_rear_door')"/>
                         <text x="31" y="238" font-size="10" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">左後門</text>
 
-                        <!-- 右後門 -->
                         <path id="part-right_rear_door" class="car-part" d="M 185 203 L 152 203 L 152 270 L 182 260 Z" onclick="toggleCarPart('right_rear_door')"/>
                         <text x="169" y="238" font-size="10" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">右後門</text>
 
-                        <!-- 後廂蓋 -->
                         <path id="part-trunk" class="car-part" d="M 55 228 L 145 228 L 148 275 L 52 275 Z" onclick="toggleCarPart('trunk')"/>
                         <text x="100" y="255" font-size="11" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">後廂蓋</text>
 
-                        <!-- 後保桿 -->
                         <path id="part-rear_bumper" class="car-part" d="M 50 282 L 150 282 L 155 312 Q 100 320 45 312 Z" onclick="toggleCarPart('rear_bumper')"/>
                         <text x="100" y="302" font-size="11" fill="#334155" text-anchor="middle" font-weight="bold" pointer-events="none">後保桿</text>
                     </svg>
@@ -663,7 +612,6 @@
                 </div>
             </div>
 
-            <!-- 已上傳照片預覽 -->
             <div class="photo-grid" id="photo-grid"></div>
         </div>
 
@@ -678,28 +626,27 @@
 </div>
 
 <script>
-    let records = [
-        {
-            plate: "BRH-3256",
-            staff: "林專員",
-            owner: "陳先生",
-            mileage: "45200",
-            time: "08:01",
-            status: "在場",
-            wash: true,
-            damagedParts: ["front_bumper"],
-            photos: [],
-            notes: "例行保養，前保桿輕微擦傷"
-        }
-    ];
-
+    let records = [];
     let currentDamagedParts = [];
     let uploadedPhotos = [];
 
     window.onload = function() {
+        // 從手機/電腦瀏覽器讀取儲存的資料
+        const savedData = localStorage.getItem('car_records');
+        if (savedData) {
+            try {
+                records = JSON.parse(savedData);
+            } catch (e) {
+                records = [];
+            }
+        }
         renderRecords();
         updateStats();
     };
+
+    function saveDataToStorage() {
+        localStorage.setItem('car_records', JSON.stringify(records));
+    }
 
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -709,7 +656,6 @@
             document.getElementById('tab-overview').classList.add('active');
         } else {
             document.getElementById('tab-records').classList.add('active');
-            renderRecords();
         }
         btn.classList.add('active');
     }
@@ -782,20 +728,15 @@
     }
 
     function updateDamageUI() {
-        // 更新 SVG 區塊狀態
         const allSvgParts = ['front_bumper', 'hood', 'left_front_door', 'right_front_door', 'roof', 'left_rear_door', 'right_rear_door', 'trunk', 'rear_bumper'];
         allSvgParts.forEach(p => {
             const el = document.getElementById('part-' + p);
             if (el) {
-                if (currentDamagedParts.includes(p)) {
-                    el.classList.add('damaged');
-                } else {
-                    el.classList.remove('damaged');
-                }
+                if (currentDamagedParts.includes(p)) el.classList.add('damaged');
+                else el.classList.remove('damaged');
             }
         });
 
-        // 更新細部配件 Checkbox 狀態
         const checkboxes = ['left_mirror', 'right_mirror', 'front_glass', 'rear_glass'];
         checkboxes.forEach(p => {
             const lbl = document.getElementById('lbl-' + p);
@@ -855,7 +796,6 @@
         
         const now = new Date();
         const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-
         const editIndex = parseInt(document.getElementById('edit-index').value);
 
         const recordData = {
@@ -873,14 +813,17 @@
             records.unshift(recordData);
         }
 
+        saveDataToStorage(); // 立即寫入本地永久儲存
         renderRecords();
         updateStats();
         closeModal();
+        alert('✅ 資料已成功儲存，絕不遺失！');
     }
 
     function deleteRecord(index) {
         if (confirm('確定要刪除這筆接待紀錄嗎？')) {
             records.splice(index, 1);
+            saveDataToStorage();
             renderRecords();
             updateStats();
         }
@@ -906,7 +849,7 @@
             const card = document.createElement('div');
             card.className = 'record-card';
             
-            let tagsHtml = `<span class="tag tag-waiting">${rec.status}</span>`;
+            let tagsHtml = `<span class="tag tag-waiting">${rec.status || '在場'}</span>`;
             if (rec.wash) tagsHtml += `<span class="tag tag-wash">要洗車</span>`;
             if (rec.damagedParts && rec.damagedParts.length > 0) {
                 tagsHtml += `<span class="tag tag-damage">車損 ${rec.damagedParts.length} 處</span>`;
@@ -918,11 +861,11 @@
 
             card.innerHTML = `
                 <div class="record-header">
-                    <div class="record-plate">${rec.plate} <span style="font-size: 13px; font-weight: normal; color: #64748b;">專員：${rec.staff}</span></div>
+                    <div class="record-plate">${rec.plate} <span style="font-size: 13px; font-weight: normal; color: #64748b;">專員：${rec.staff || '林專員'}</span></div>
                     <div class="record-tags">${tagsHtml}</div>
                 </div>
                 <div class="record-body">
-                    <div>進廠里程：${rec.mileage ? Number(rec.mileage).toLocaleString() + ' km' : '未填寫'} ｜ 時間：${rec.time}</div>
+                    <div>進廠里程：${rec.mileage ? Number(rec.mileage).toLocaleString() + ' km' : '未填寫'} ｜ 時間：${rec.time || ''}</div>
                     <div>外觀傷痕：${damageDesc}</div>
                     <div>車主問題：${rec.notes || '無'}</div>
                 </div>
@@ -937,7 +880,7 @@
 
     function updateStats() {
         document.getElementById('stat-total').innerText = `${records.length} 台`;
-        const waitingCount = records.filter(r => r.status === '在場').length;
+        const waitingCount = records.filter(r => (r.status || '在場') === '在場').length;
         const washCount = records.filter(r => r.wash).length;
         const damageCount = records.filter(r => r.damagedParts && r.damagedParts.length > 0).length;
 
