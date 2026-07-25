@@ -556,9 +556,7 @@
         <div class="marquee-container">
             <span class="marquee-badge">📢 公告</span>
             <div style="overflow: hidden; width: 100%;">
-                <span class="marquee-text">臺北市2026城鎮韌性（防空）演習訂於8月13日(星期四）14時30分至15時實施，全市人、車及各場所均須配合管制與避難演練，以免受罰。
-
-</span>
+                <span class="marquee-text">臺北市2026城鎮韌性（防空）演習訂於8月13日(星期四）14時30分至15時實施，全市人、車及各場所均須配合管制與避難演練，以免受罰。</span>
             </div>
         </div>
     </div>
@@ -661,7 +659,7 @@
         <!-- 外觀受損標記與照片 -->
         <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="margin:0;">6. 外觀受損標記與照片</label>
+                <label style="margin:0;">外觀受損標記與照片</label>
                 <div>
                     <label for="photo-file-input" class="btn btn-outline" style="padding: 2px 8px; font-size: 11px; display:inline-flex; cursor:pointer;">✨ 上傳車損照片</label>
                     <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none;" onchange="handlePhotoUpload(event)">
@@ -760,7 +758,13 @@
     }
 
     function saveDataToStorage() {
-        localStorage.setItem('car_records', JSON.stringify(records));
+        try {
+            localStorage.setItem('car_records', JSON.stringify(records));
+            return true;
+        } catch (e) {
+            alert('⚠️ 本地儲存容量已被照片爆滿！已嘗試保存純文字紀錄。建議減少上傳照片張數。');
+            return false;
+        }
     }
 
     function handleLogin() {
@@ -843,11 +847,11 @@
         if (editIndex > -1) {
             document.getElementById('modal-title').innerText = "編輯車輛進廠接待登記表";
             const rec = records[editIndex];
-            document.getElementById('field-plate').value = rec.plate;
+            document.getElementById('field-plate').value = rec.plate || '';
             document.getElementById('field-staff').value = rec.staff || currentUser;
             document.getElementById('field-owner').value = rec.owner || '';
             document.getElementById('field-mileage').value = rec.mileage || '';
-            document.getElementById('chk-wash').checked = rec.wash;
+            document.getElementById('chk-wash').checked = !!rec.wash;
             
             if (rec.status === '留車') {
                 document.getElementById('status-留車').checked = true;
@@ -915,27 +919,57 @@
         const checkboxes = ['left_mirror', 'right_mirror', 'front_glass', 'rear_glass'];
         checkboxes.forEach(p => {
             const lbl = document.getElementById('lbl-' + p);
-            const chk = lbl.querySelector('input');
-            if (currentDamagedParts.includes(p)) {
-                chk.checked = true;
-                lbl.classList.add('checked');
-            } else {
-                chk.checked = false;
-                lbl.classList.remove('checked');
+            if (lbl) {
+                const chk = lbl.querySelector('input');
+                if (currentDamagedParts.includes(p)) {
+                    chk.checked = true;
+                    lbl.classList.add('checked');
+                } else {
+                    chk.checked = false;
+                    lbl.classList.remove('checked');
+                }
             }
         });
     }
 
-    function handlePhotoUpload(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
+    // 圖像自動壓縮，解決儲存失敗暴滿問題
+    function compressImage(file) {
+        return new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onload = (event) => {
-                uploadedPhotos.push(event.target.result);
-                renderPhotoGrid();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const maxDim = 800; // 限制最大寬高為 800px
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7)); // 70% 質量壓縮
+                };
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    async function handlePhotoUpload(e) {
+        const files = Array.from(e.target.files);
+        for (let file of files) {
+            const compressedBase64 = await compressImage(file);
+            uploadedPhotos.push(compressedBase64);
+        }
+        renderPhotoGrid();
         e.target.value = '';
     }
 
@@ -974,12 +1008,16 @@
         const editIndex = parseInt(document.getElementById('edit-index').value);
 
         const recordData = {
-            plate, staff, owner, mileage,
+            plate: plate.toUpperCase(),
+            staff: staff,
+            owner: owner,
+            mileage: mileage,
             time: editIndex > -1 ? records[editIndex].time : timeStr,
-            status, wash,
+            status: status,
+            wash: wash,
             damagedParts: [...currentDamagedParts],
             photos: [...uploadedPhotos],
-            notes
+            notes: notes
         };
 
         if (editIndex > -1) {
@@ -992,7 +1030,7 @@
         renderRecords();
         updateStats();
         closeModal();
-        alert('✅ 資料已成功儲存，絕不遺失！');
+        alert('✅ 資料已成功儲存！');
     }
 
     function deleteRecord(index) {
@@ -1139,7 +1177,7 @@
         const msg = 
 `🚗 【車輛進廠交接報告】
 ▫️ 狀態：${status} ｜ 洗車：${wash}
-▫️ 車牌號碼：${plate}
+▫️ 車牌號碼：${plate.toUpperCase()}
 ▫️ 接車專員：${staff}
 ▫️ 車主資訊：${owner || '未填寫'}
 ▫️ 進廠里程：${mileage ? mileage + ' km' : '未填寫'}
