@@ -8,7 +8,7 @@
     <!-- Tesseract.js OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-    <!-- Firebase JS SDK (雲端即時同步) -->
+    <!-- Firebase SDK (Version 9 Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -36,7 +36,6 @@
         .btn-top { border: none; border-radius: 8px; padding: 8px 12px; font-weight: bold; font-size: 13px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; }
         .btn-ocr { background: var(--green-btn); }
         .btn-manual { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4); }
-        .btn-logout { background: #9f1239; }
 
         .marquee-box { background: rgba(0, 0, 0, 0.2); margin-top: 12px; padding: 6px 10px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; }
         .marquee-tag { background: #f59e0b; color: white; font-weight: bold; padding: 1px 6px; border-radius: 4px; font-size: 10px; flex-shrink: 0; }
@@ -44,7 +43,6 @@
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
         .content { padding: 16px; }
-
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
         .stat-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .stat-title { font-size: 13px; color: #64748b; font-weight: bold; }
@@ -80,7 +78,6 @@
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-
         .status-loading { font-size: 12px; color: #2563eb; font-weight: bold; text-align: center; margin-top: 4px; }
     </style>
 </head>
@@ -90,17 +87,16 @@
     <div class="header-main">
         <div>
             <div class="user-info">智慧車輛進廠管理</div>
-            <div class="user-sub">已登入專員：tam (安全防護版)</div>
+            <div class="user-sub">已登入專員：tam (Firebase 專屬版)</div>
         </div>
         <div class="btn-group-top">
             <button class="btn-top btn-ocr" onclick="triggerCameraOCR()">📷 拍照<br>辨識</button>
             <button class="btn-top btn-manual" onclick="openModal('manual')">+ 手動</button>
-            <button class="btn-top btn-logout" onclick="alert('已安全登出')">登出</button>
         </div>
     </div>
     <div class="marquee-box">
         <span class="marquee-tag">📣 公告</span>
-        <span class="marquee-text">⚡ 雲端資料庫已連線！相機拍車牌自動壓縮並跨裝置同步。</span>
+        <span class="marquee-text">⚡ 雲端資料庫連線中！手機拍攝即時同步至電腦端。</span>
     </div>
 </div>
 
@@ -129,7 +125,7 @@
         <div class="system-status-card">
             <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ 系統運作狀態</div>
             <div style="font-size: 12px; color: #64748b; line-height: 1.5;" id="sync-status-text">
-                📡 正在連線至雲端同步資料庫...
+                📡 正在連線至 garage-system-1f70c 資料庫...
             </div>
         </div>
     </div>
@@ -140,7 +136,7 @@
             <span style="font-size: 12px; color:#64748b;" id="record-count-text">共 0 筆記錄</span>
         </div>
         <div id="records-container">
-            <p style="text-align: center; color: #94a3b8; padding: 40px 0;" id="empty-msg">目前尚無任何進廠接待記錄</p>
+            <p style="text-align: center; color: #94a3b8; padding: 40px 0;">目前尚無任何進廠接待記錄</p>
         </div>
     </div>
 </div>
@@ -154,7 +150,6 @@
     </button>
 </div>
 
-<!-- 檔案選取元件 (移除 capture 參數確保相簿與相機皆可選取) -->
 <input type="file" id="hidden-file-input" accept="image/*" style="display:none;" onchange="handleOCRImage(event)">
 
 <div class="modal-overlay" id="form-modal">
@@ -207,20 +202,26 @@
     </div>
 </div>
 
-<canvas id="procCanvas" style="display:none;"></canvas>
-
 <script>
-    // Firebase Realtime Database
+    // 你的專屬 Firebase 配置
     const firebaseConfig = {
-        databaseURL: "https://garage-sync-default-rtdb.firebaseio.com/"
+        apiKey: "AIzaSyDOtniuCerLb8GDZVxc2DtNE3v_V0p_7O0",
+        authDomain: "garage-system-1f70c.firebaseapp.com",
+        databaseURL: "https://garage-system-1f70c-default-rtdb.firebaseio.com",
+        projectId: "garage-system-1f70c",
+        storageBucket: "garage-system-1f70c.firebasestorage.app",
+        messagingSenderId: "821307567379",
+        appId: "1:821307567379:web:8bf806c24f0ed59bc1bee6"
     };
+
+    // 初始化 Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database().ref("garage_records");
 
     let recordsList = [];
     let currentPhotoBase64 = "";
 
-    // 即時同步
+    // 監聽雲端資料庫
     db.on('value', (snapshot) => {
         const data = snapshot.val();
         recordsList = [];
@@ -231,17 +232,17 @@
         }
         updateOverviewStats();
         renderRecords();
-        document.getElementById('sync-status-text').innerText = "⚡ 雲端即時連線正常！手機與電腦資料 100% 同步中。";
+        document.getElementById('sync-status-text').innerText = "⚡ Firebase 雲端即時連線成功！資料已 100% 同步。";
+    }, (error) => {
+        document.getElementById('sync-status-text').innerText = "❌ 連線受阻：請確認 Realtime Database 的 Rules 規則設為 read/write: true";
     });
 
-    /* 觸發檔案上傳 */
     function triggerCameraOCR() {
         const fileInput = document.getElementById('hidden-file-input');
-        fileInput.value = ''; // 清空重置
+        fileInput.value = '';
         fileInput.click();
     }
 
-    /* 處理圖片：壓縮 + 車牌 OCR 辨識 */
     async function handleOCRImage(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -253,61 +254,45 @@
         
         document.getElementById('photo-preview-group').style.display = 'flex';
         plateInput.value = "";
-        statusText.innerText = "⏳ 正在壓縮照片與進行 AI 辨識...";
+        statusText.innerText = "⏳ 圖片壓縮與 AI 辨識中...";
 
         try {
-            // 1. 自動壓縮圖片 (長寬上限 800px)
-            currentPhotoBase64 = await resizeImage(file, 800, 0.7);
+            // 壓縮圖片尺寸防止 Firebase 過載
+            currentPhotoBase64 = await resizeImage(file, 600, 0.6);
             previewImg.src = currentPhotoBase64;
 
-            // 2. 進行 Tesseract OCR 辨識
             const worker = await Tesseract.createWorker('eng');
-            await worker.setParameters({
-                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-            });
+            await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' });
             const res = await worker.recognize(currentPhotoBase64);
             await worker.terminate();
 
             const parsedPlate = fixTaiwanPlateFormat(res.data.text);
             plateInput.value = parsedPlate;
-            statusText.innerText = parsedPlate === "辨識失敗" ? "⚠️ 無法自動識別車牌，請手動輸入" : "✅ 辨識完成！";
+            statusText.innerText = parsedPlate === "辨識失敗" ? "⚠️ 自動辨識失敗，請手動填寫" : "✅ 辨識完成！";
         } catch (err) {
-            console.error(err);
-            statusText.innerText = "⚠️ 辨識過程發生錯誤，請手動輸入車牌";
+            statusText.innerText = "⚠️ 請手動輸入車牌";
         }
     }
 
-    /* 圖片等比例壓縮 Helper */
-    function resizeImage(file, maxSide = 800, quality = 0.7) {
+    function resizeImage(file, maxSide = 600, quality = 0.6) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxSide || height > maxSide) {
-                        if (width > height) {
-                            height = Math.round((height * maxSide) / width);
-                            width = maxSide;
-                        } else {
-                            width = Math.round((width * maxSide) / height);
-                            height = maxSide;
-                        }
+                    let w = img.width, h = img.height;
+                    if (w > maxSide || h > maxSide) {
+                        if (w > h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                        else { w = Math.round((w * maxSide) / h); h = maxSide; }
                     }
-
                     const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
+                    canvas.width = w; canvas.height = h;
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, w, h);
                     resolve(canvas.toDataURL('image/jpeg', quality));
                 };
-                img.onerror = reject;
                 img.src = e.target.result;
             };
-            reader.onerror = reject;
             reader.readAsDataURL(file);
         });
     }
@@ -322,7 +307,6 @@
         return str;
     }
 
-    /* 空照圖與點選部位 */
     let carCanvas, carCtx;
     let damagePoints = [];
     let currentDamageType = '刮傷';
@@ -398,10 +382,9 @@
     }
     function clearDamage() { damagePoints = []; drawCarTopView(); }
 
-    /* 寫入 Firebase 資料庫 */
     function saveRecord() {
         const plate = document.getElementById('field-plate').value.trim();
-        if (!plate || plate === "AI 辨識中...") { alert('請填寫或確認車牌號碼！'); return; }
+        if (!plate || plate === "AI 辨識中...") { alert('請輸入車牌！'); return; }
 
         const damageText = damagePoints.length > 0 
             ? damagePoints.map(p => `${p.part}(${p.type})`).join(', ') 
