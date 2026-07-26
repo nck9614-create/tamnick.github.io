@@ -2,466 +2,426 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>智慧車輛進廠管理系統</title>
-
-    <!-- Tesseract.js OCR -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-    <!-- Firebase SDK (Version 9 Compat) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>車輛進廠接待登記系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-    <style>
-        :root {
-            --primary-blue: #1d4ed8;
-            --header-bg: linear-gradient(135deg, #1e40af, #2563eb);
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-color: #0f172a;
-            --border-color: #e2e8f0;
-            --green-btn: #059669;
-            --danger-color: #ef4444;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; max-width: 500px; margin: auto; }
-
-        .top-header { background: var(--header-bg); padding: 16px; border-radius: 0 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
-        .header-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-        .user-info { font-size: 15px; font-weight: bold; line-height: 1.4; }
-        .user-sub { font-size: 11px; opacity: 0.85; font-weight: normal; }
-
-        .btn-group-top { display: flex; gap: 6px; }
-        .btn-top { border: none; border-radius: 8px; padding: 8px 12px; font-weight: bold; font-size: 13px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; }
-        .btn-ocr { background: var(--green-btn); }
-        .btn-manual { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4); }
-
-        .marquee-box { background: rgba(0, 0, 0, 0.2); margin-top: 12px; padding: 6px 10px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; }
-        .marquee-tag { background: #f59e0b; color: white; font-weight: bold; padding: 1px 6px; border-radius: 4px; font-size: 10px; flex-shrink: 0; }
-        .marquee-text { display: inline-block; animation: marquee 12s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-
-        .content { padding: 16px; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-        .stat-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .stat-title { font-size: 13px; color: #64748b; font-weight: bold; }
-        .stat-value { font-size: 28px; font-weight: 800; margin-top: 6px; }
-        .val-blue { color: #2563eb; }
-        .val-green { color: #059669; }
-        .val-amber { color: #d97706; }
-
-        .system-status-card { background: white; border-radius: 12px; padding: 14px; border: 1px solid var(--border-color); margin-top: 12px; }
-
-        .record-card { background: white; border-radius: 12px; padding: 14px; border: 1px solid var(--border-color); margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
-        .record-header { display: flex; justify-content: space-between; align-items: center; }
-        .record-plate { font-size: 18px; font-weight: bold; color: var(--primary-blue); }
-        .record-photo { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 4px; }
-
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; max-width: 500px; margin: auto; z-index: 100; }
-        .nav-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-        .nav-btn.active { color: var(--primary-blue); }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 16px 8px; z-index: 1000; }
-        .modal-card { background: white; width: 100%; max-width: 480px; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 60px; }
-
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 12px; font-weight: bold; color: #475569; }
-        input, textarea, select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
-        .plate-input { font-size: 24px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; text-align: center; color: var(--primary-blue); border: 2px solid var(--primary-blue); }
-
-        .car-topview-box { text-align: center; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px dashed var(--primary-blue); }
-        canvas { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: crosshair; }
-        .damage-btn-group { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
-        .damage-btn-group button { padding: 4px 10px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: white; cursor: pointer; }
-        .damage-btn-group button.active { background: var(--danger-color); color: white; border-color: var(--danger-color); }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .status-loading { font-size: 12px; color: #2563eb; font-weight: bold; text-align: center; margin-top: 4px; }
-    </style>
+    <!-- Tesseract.js OCR Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <!-- FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
 
-<div class="top-header">
-    <div class="header-main">
-        <div>
-            <div class="user-info">智慧車輛進廠管理</div>
-            <div class="user-sub">已登入專員：tam (Firebase 專屬版)</div>
+    <!-- 頂部導覽列 -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-wrench text-amber-400 text-xl"></i>
+                <h1 class="text-lg font-bold tracking-wide">車輛進廠接待系統</h1>
+            </div>
+            <button onclick="openRegisterModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-1.5 rounded-lg text-sm flex items-center space-x-1 shadow transition">
+                <i class="fa-solid fa-plus"></i>
+                <span>新增接車</span>
+            </button>
         </div>
-        <div class="btn-group-top">
-            <button class="btn-top btn-ocr" onclick="triggerCameraOCR()">📷 拍照<br>辨識</button>
-            <button class="btn-top btn-manual" onclick="openModal('manual')">+ 手動</button>
-        </div>
-    </div>
-    <div class="marquee-box">
-        <span class="marquee-tag">📣 公告</span>
-        <span class="marquee-text">⚡ 雲端資料庫連線中！手機拍攝即時同步至電腦端。</span>
-    </div>
-</div>
+    </header>
 
-<div class="content">
-    <div id="tab-overview" class="tab-content active">
-        <h3 style="font-size: 16px; margin-bottom: 8px;">今日接車概況</h3>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title">今日總接車</div>
-                <div class="stat-value val-blue" id="stat-total">0 台</div>
+    <!-- 主體內容 -->
+    <main class="max-w-4xl mx-auto px-4 mt-6">
+        
+        <!-- 狀態列 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-2 text-sm text-slate-600">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="sync-status-text">⚡ 雲端資料庫連線中...</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">現場等候中</div>
-                <div class="stat-value val-green" id="stat-waiting">0 台</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">需洗車服務</div>
-                <div class="stat-value val-blue" id="stat-wash">0 台</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">外觀有傷紀錄</div>
-                <div class="stat-value val-amber" id="stat-damage">0 台</div>
+            <div class="flex space-x-4 text-xs font-semibold text-slate-500">
+                <div>今日進廠: <span id="stat-today" class="text-slate-900 text-sm">0</span> 台</div>
+                <div>未完工: <span id="stat-pending" class="text-amber-600 text-sm">0</span> 台</div>
             </div>
         </div>
 
-        <div class="system-status-card">
-            <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ 系統運作狀態</div>
-            <div style="font-size: 12px; color: #64748b; line-height: 1.5;" id="sync-status-text">
-                📡 正在連線至 garage-system-1f70c 資料庫...
+        <!-- 搜尋與篩選 -->
+        <div class="mb-4 flex gap-2">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                <input type="text" id="search-input" oninput="renderRecords()" placeholder="搜尋車牌、車主姓名或電話..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500">
             </div>
         </div>
-    </div>
 
-    <div id="tab-records" class="tab-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="font-size: 16px;">進廠車輛接待清單</h3>
-            <span style="font-size: 12px; color:#64748b;" id="record-count-text">共 0 筆記錄</span>
+        <!-- 歷史紀錄列表 -->
+        <div id="records-container" class="space-y-3">
+            <div class="text-center py-12 text-slate-400">
+                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                <p class="text-sm">載入資料中...</p>
+            </div>
         </div>
-        <div id="records-container">
-            <p style="text-align: center; color: #94a3b8; padding: 40px 0;">目前尚無任何進廠接待記錄</p>
-        </div>
-    </div>
-</div>
+    </main>
 
-<div class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTab('overview', this)">
-        <span>📊</span> 概況統計
-    </button>
-    <button class="nav-btn" onclick="switchTab('records', this)">
-        <span>📋</span> 接待記錄清單
-    </button>
-</div>
+    <!-- 隱藏的檔案選擇器 (用於拍照/上傳車牌照片) -->
+    <input type="file" id="hidden-file-input" accept="image/*" capture="environment" class="hidden" onchange="handleOCRImage(event)">
 
-<input type="file" id="hidden-file-input" accept="image/*" style="display:none;" onchange="handleOCRImage(event)">
+    <!-- 新增/編輯 登記 Modal -->
+    <div id="register-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl sticky top-0 z-10">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-car-side text-slate-600"></i>
+                    <span>車輛進廠接待登記</span>
+                </h2>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
 
-<div class="modal-overlay" id="form-modal">
-    <div class="modal-card">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="font-size: 16px;">車輛進廠接待登記</h3>
-            <button style="border:none; background:none; font-size:20px; cursor:pointer;" onclick="closeModal()">✕</button>
-        </div>
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4">
+                
+                <!-- 拍照/OCR 區塊 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">📷 車牌/現場照片</label>
+                    <button type="button" onclick="triggerCameraOCR()" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-xl hover:border-slate-500 hover:bg-slate-50 transition text-slate-600 font-semibold text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-camera text-slate-500"></i>
+                        <span>拍照辨識車牌 / 上傳照片</span>
+                    </button>
+                    <p id="ocr-status-text" class="text-xs text-slate-500 mt-1 text-center font-medium"></p>
+                </div>
 
-        <div class="form-group" id="photo-preview-group" style="display:none;">
-            <label>📷 車牌/現場照片</label>
-            <img id="modal-photo-preview" style="width:100%; max-height:160px; object-fit:contain; border-radius:8px; background:#000;">
-            <div id="ocr-status-text" class="status-loading"></div>
-        </div>
+                <!-- 照片預覽區 -->
+                <div id="photo-preview-group" class="hidden flex-col items-center border border-slate-200 rounded-xl p-2 bg-slate-50">
+                    <img id="modal-photo-preview" src="" alt="車牌預覽" class="max-h-48 rounded-lg object-contain">
+                    <button type="button" onclick="removePhoto()" class="mt-2 text-xs text-red-500 hover:underline">移除照片</button>
+                </div>
 
-        <div class="form-group">
-            <label>🚗 車牌號碼</label>
-            <input type="text" id="field-plate" class="plate-input" placeholder="ABC-1234">
-        </div>
+                <!-- 車牌號碼輸入 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">🚗 車牌號碼 <span class="text-red-500">*</span></label>
+                    <input type="text" id="field-plate" placeholder="例如: BRH-3256" class="w-full p-2.5 border border-slate-300 rounded-lg text-lg font-mono font-bold tracking-wider text-slate-800 uppercase focus:ring-2 focus:ring-slate-500 outline-none">
+                </div>
 
-        <div class="form-group">
-            <label>🛠️ 車損點選 (點擊空照圖標記細節部位)</label>
-            <div class="car-topview-box">
-                <canvas id="carCanvas" width="300" height="240"></canvas>
-                <div class="damage-btn-group">
-                    <button class="active" onclick="setDamageType('刮傷', this)">🔴 刮傷</button>
-                    <button onclick="setDamageType('凹痕', this)">🔵 凹痕</button>
-                    <button onclick="clearDamage()">↺ 清除標記</button>
+                <!-- 車主與聯絡資訊 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">👤 車主姓名</label>
+                        <input type="text" id="field-owner" placeholder="陳先生" class="w-full p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-slate-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">📞 聯絡電話</label>
+                        <input type="tel" id="field-phone" placeholder="0912345678" class="w-full p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-slate-500">
+                    </div>
+                </div>
+
+                <!-- 進廠原因/維修項目 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">📝 進廠原因 / 預計維修項目</label>
+                    <textarea id="field-reason" rows="3" placeholder="例如: 定期保養、煞車異音處理..." class="w-full p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-slate-500"></textarea>
+                </div>
+
+                <!-- 狀態設定 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">📌 進廠狀態</label>
+                    <select id="field-status" class="w-full p-2 border border-slate-300 rounded-lg text-sm outline-none bg-white">
+                        <option value="待處理">待處理</option>
+                        <option value="施工中">施工中</option>
+                        <option value="已完工">已完工</option>
+                    </select>
                 </div>
             </div>
-        </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="form-group">
-                <label>洗車服務</label>
-                <select id="field-wash"><option value="否">否</option><option value="是">是</option></select>
-            </div>
-            <div class="form-group">
-                <label>進廠里程 (km)</label>
-                <input type="number" id="field-mileage" placeholder="例如: 45000">
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-2">
+                <button onclick="closeRegisterModal()" class="flex-1 py-2 rounded-lg border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition">取消</button>
+                <button onclick="saveRecord()" class="flex-1 py-2 rounded-lg bg-slate-900 text-white font-semibold text-sm hover:bg-slate-800 shadow transition">儲存登記</button>
             </div>
         </div>
-
-        <div class="form-group">
-            <label>備註 / 車主交代事項</label>
-            <textarea id="field-notes" rows="2" placeholder="請填寫交代事項..."></textarea>
-        </div>
-
-        <button class="btn-top btn-ocr" style="width:100%; padding:12px; font-size:16px; margin-top:6px;" onclick="saveRecord()">☁️ 儲存並雲端同步</button>
     </div>
-</div>
 
-<script>
-    // 你的專屬 Firebase 配置
-    const firebaseConfig = {
-        apiKey: "AIzaSyDOtniuCerLb8GDZVxc2DtNE3v_V0p_7O0",
-        authDomain: "garage-system-1f70c.firebaseapp.com",
-        databaseURL: "https://garage-system-1f70c-default-rtdb.firebaseio.com",
-        projectId: "garage-system-1f70c",
-        storageBucket: "garage-system-1f70c.firebasestorage.app",
-        messagingSenderId: "821307567379",
-        appId: "1:821307567379:web:8bf806c24f0ed59bc1bee6"
-    };
+    <!-- 腳本邏輯 -->
+    <script>
+        // 1. Firebase 初始化
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOtniuCerLb8GDZVxc2DtNE3v_V0p_7O0",
+            authDomain: "garage-system-1f70c.firebaseapp.com",
+            databaseURL: "https://garage-system-1f70c-default-rtdb.firebaseio.com",
+            projectId: "garage-system-1f70c",
+            storageBucket: "garage-system-1f70c.firebasestorage.app",
+            messagingSenderId: "821307567379",
+            appId: "1:821307567379:web:8bf806c24f0ed59bc1bee6"
+        };
 
-    // 初始化 Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("garage_records");
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref("garage_records");
 
-    let recordsList = [];
-    let currentPhotoBase64 = "";
+        let recordsList = [];
+        let currentPhotoBase64 = "";
 
-    // 監聽雲端資料庫
-    db.on('value', (snapshot) => {
-        const data = snapshot.val();
-        recordsList = [];
-        if (data) {
-            Object.keys(data).forEach(key => {
-                recordsList.unshift(data[key]);
+        // 2. 即時連線 Firebase 監聽資料變化
+        db.on('value', (snapshot) => {
+            const data = snapshot.val();
+            recordsList = [];
+            if (data) {
+                Object.keys(data).forEach(id => {
+                    recordsList.unshift({ id, ...data[id] });
+                });
+            }
+            updateStats();
+            renderRecords();
+            document.getElementById('sync-status-text').innerText = "⚡ 雲端連線成功，資料即時同步中";
+        }, (err) => {
+            document.getElementById('sync-status-text').innerText = "❌ 雲端連線失敗，請檢查網路狀態";
+        });
+
+        // 3. 觸發圖片上傳/拍照
+        function triggerCameraOCR() {
+            const input = document.getElementById('hidden-file-input');
+            input.value = '';
+            input.click();
+        }
+
+        // 4. 處理圖片上傳與 OCR 辨識
+        async function handleOCRImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusText = document.getElementById('ocr-status-text');
+            const previewImg = document.getElementById('modal-photo-preview');
+            const plateInput = document.getElementById('field-plate');
+
+            statusText.innerText = "⏳ 影像對比優化與 OCR 辨識中...";
+            document.getElementById('photo-preview-group').classList.remove('hidden');
+            document.getElementById('photo-preview-group').classList.add('flex');
+
+            try {
+                // 將圖片轉成高對比黑白圖以優化辨識效果
+                currentPhotoBase64 = await processImageForOCR(file);
+                previewImg.src = currentPhotoBase64;
+
+                // Tesseract 辨識引擎
+                const worker = await Tesseract.createWorker('eng');
+                await worker.setParameters({
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                });
+
+                const res = await worker.recognize(currentPhotoBase64);
+                await worker.terminate();
+
+                // 套用台灣車牌修復規則
+                const parsedPlate = cleanAndFixPlate(res.data.text);
+                if (parsedPlate !== "辨識失敗") {
+                    plateInput.value = parsedPlate;
+                    statusText.innerText = "✅ 自動辨識成功！請核對車牌是否正確";
+                } else {
+                    statusText.innerText = "⚠️ 未能辨識出車牌，請直接手動輸入";
+                }
+
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "⚠️ 辨識發生錯誤，請直接手動輸入車牌";
+            }
+        }
+
+        // 5. 圖像黑白高對比優化 (防止螺絲/點被辨識成字母)
+        function processImageForOCR(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const maxSide = 800;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w > h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        // 二值化高對比處理
+                        const imgData = ctx.getImageData(0, 0, w, h);
+                        const d = imgData.data;
+                        for (let i = 0; i < d.length; i += 4) {
+                            let gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+                            let v = gray < 120 ? 0 : 255;
+                            d[i] = v; d[i+1] = v; d[i+2] = v;
+                        }
+                        ctx.putImageData(imgData, 0, 0);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             });
         }
-        updateOverviewStats();
-        renderRecords();
-        document.getElementById('sync-status-text').innerText = "⚡ Firebase 雲端即時連線成功！資料已 100% 同步。";
-    }, (error) => {
-        document.getElementById('sync-status-text').innerText = "❌ 連線受阻：請確認 Realtime Database 的 Rules 規則設為 read/write: true";
-    });
 
-    function triggerCameraOCR() {
-        const fileInput = document.getElementById('hidden-file-input');
-        fileInput.value = '';
-        fileInput.click();
-    }
+        // 6. 台灣車牌格式修復邏輯 (修正文字誤判)
+        function cleanAndFixPlate(raw) {
+            let str = raw.replace(/[^A-Z0-9]/gi, '').toUpperCase();
 
-    async function handleOCRImage(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+            // 格式: 3英 + 4數 (例如 BRH3256)
+            let match3_4 = str.match(/[A-Z]{3}[0-9]{4}/);
+            if (match3_4) {
+                let res = match3_4[0];
+                return `${res.substring(0, 3)}-${res.substring(3, 7)}`;
+            }
 
-        openModal('ocr');
-        const previewImg = document.getElementById('modal-photo-preview');
-        const plateInput = document.getElementById('field-plate');
-        const statusText = document.getElementById('ocr-status-text');
-        
-        document.getElementById('photo-preview-group').style.display = 'flex';
-        plateInput.value = "";
-        statusText.innerText = "⏳ 圖片壓縮與 AI 辨識中...";
+            // 格式: 2英 + 4數
+            let match2_4 = str.match(/[A-Z]{2}[0-9]{4}/);
+            if (match2_4) {
+                let res = match2_4[0];
+                return `${res.substring(0, 2)}-${res.substring(2, 6)}`;
+            }
 
-        try {
-            // 壓縮圖片尺寸防止 Firebase 過載
-            currentPhotoBase64 = await resizeImage(file, 600, 0.6);
-            previewImg.src = currentPhotoBase64;
+            // 格式: 4數 + 2英
+            let match4_2 = str.match(/[0-9]{4}[A-Z]{2}/);
+            if (match4_2) {
+                let res = match4_2[0];
+                return `${res.substring(0, 4)}-${res.substring(4, 6)}`;
+            }
 
-            const worker = await Tesseract.createWorker('eng');
-            await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' });
-            const res = await worker.recognize(currentPhotoBase64);
-            await worker.terminate();
+            // 通用過濾 (6~7 碼)
+            if (str.length >= 6) {
+                let cleanStr = str.substring(0, 7);
+                if (cleanStr.length === 7) return `${cleanStr.substring(0, 3)}-${cleanStr.substring(3, 7)}`;
+                if (cleanStr.length === 6) return `${cleanStr.substring(0, 3)}-${cleanStr.substring(3, 6)}`;
+            }
 
-            const parsedPlate = fixTaiwanPlateFormat(res.data.text);
-            plateInput.value = parsedPlate;
-            statusText.innerText = parsedPlate === "辨識失敗" ? "⚠️ 自動辨識失敗，請手動填寫" : "✅ 辨識完成！";
-        } catch (err) {
-            statusText.innerText = "⚠️ 請手動輸入車牌";
+            return "辨識失敗";
         }
-    }
 
-    function resizeImage(file, maxSide = 600, quality = 0.6) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    let w = img.width, h = img.height;
-                    if (w > maxSide || h > maxSide) {
-                        if (w > h) { h = Math.round((h * maxSide) / w); w = maxSide; }
-                        else { w = Math.round((w * maxSide) / h); h = maxSide; }
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.src = e.target.result;
+        // 7. 移除照片
+        function removePhoto() {
+            currentPhotoBase64 = "";
+            document.getElementById('modal-photo-preview').src = "";
+            document.getElementById('photo-preview-group').classList.add('hidden');
+            document.getElementById('photo-preview-group').classList.remove('flex');
+            document.getElementById('ocr-status-text').innerText = "";
+        }
+
+        // 8. 儲存登記至 Firebase
+        function saveRecord() {
+            const plate = document.getElementById('field-plate').value.trim().toUpperCase();
+            if (!plate) {
+                alert("請輸入或辨識車牌號碼！");
+                return;
+            }
+
+            const recordData = {
+                plate: plate,
+                owner: document.getElementById('field-owner').value.trim() || "未提供",
+                phone: document.getElementById('field-phone').value.trim() || "未提供",
+                reason: document.getElementById('field-reason').value.trim() || "例行檢查",
+                status: document.getElementById('field-status').value,
+                photo: currentPhotoBase64 || "",
+                timestamp: Date.now(),
+                dateStr: new Date().toLocaleDateString('zh-TW')
             };
-            reader.readAsDataURL(file);
-        });
-    }
 
-    function fixTaiwanPlateFormat(raw) {
-        let clean = raw.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        let match = clean.match(/[A-Z0-9]{6,7}/);
-        if (!match) return "辨識失敗";
-        let str = match[0];
-        if (str.length === 7) return `${str.substring(0, 3)}-${str.substring(3, 7)}`;
-        if (str.length === 6) return `${str.substring(0, 3)}-${str.substring(3, 6)}`;
-        return str;
-    }
-
-    let carCanvas, carCtx;
-    let damagePoints = [];
-    let currentDamageType = '刮傷';
-
-    function getCarPartName(x, y) {
-        if (y < 40) return "前保桿";
-        if (y >= 40 && y < 85 && x >= 90 && x <= 210) return "引擎蓋";
-        if (y >= 85 && y < 120 && x >= 90 && x <= 210) return "前擋風玻璃";
-        if (y >= 120 && y < 165 && x >= 90 && x <= 210) return "車頂";
-        if (y >= 165 && y < 195 && x >= 90 && x <= 210) return "後擋風玻璃";
-        if (y >= 195 && y <= 230 && x >= 90 && x <= 210) return "後車廂";
-        
-        if (x < 90) {
-            if (y < 70) return "左前葉子板";
-            if (y >= 70 && y < 130) return "左前門";
-            if (y >= 130 && y < 180) return "左後門";
-            return "左後葉子板";
-        }
-        if (x > 210) {
-            if (y < 70) return "右前葉子板";
-            if (y >= 70 && y < 130) return "右前門";
-            if (y >= 130 && y < 180) return "右後門";
-            return "右後葉子板";
-        }
-        return "車身週邊";
-    }
-
-    function initCarCanvas() {
-        carCanvas = document.getElementById('carCanvas');
-        carCtx = carCanvas.getContext('2d');
-        carCanvas.onclick = function(e) {
-            const rect = carCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            damagePoints.push({ x, y, part: getCarPartName(x, y), type: currentDamageType });
-            drawCarTopView();
-        };
-        drawCarTopView();
-    }
-
-    function drawCarTopView() {
-        if (!carCtx) return;
-        carCtx.clearRect(0, 0, carCanvas.width, carCanvas.height);
-
-        carCtx.fillStyle = "#1e293b";
-        carCtx.fillRect(60, 45, 18, 35); carCtx.fillRect(222, 45, 18, 35);
-        carCtx.fillRect(60, 160, 18, 35); carCtx.fillRect(222, 160, 18, 35);
-
-        carCtx.fillStyle = "#ffffff"; carCtx.strokeStyle = "#334155"; carCtx.lineWidth = 2.5;
-        carCtx.beginPath(); carCtx.roundRect(80, 20, 140, 200, 25); carCtx.fill(); carCtx.stroke();
-
-        carCtx.fillStyle = "#cbd5e1";
-        carCtx.beginPath(); carCtx.moveTo(95, 85); carCtx.lineTo(205, 85); carCtx.lineTo(195, 115); carCtx.lineTo(105, 115); carCtx.closePath(); carCtx.fill(); carCtx.stroke();
-        carCtx.beginPath(); carCtx.moveTo(105, 165); carCtx.lineTo(195, 165); carCtx.lineTo(205, 190); carCtx.lineTo(95, 190); carCtx.closePath(); carCtx.fill(); carCtx.stroke();
-
-        carCtx.fillStyle = "#64748b"; carCtx.font = "bold 11px sans-serif";
-        carCtx.fillText("▲ 車頭 FRONT", 112, 14);
-
-        damagePoints.forEach((pt, idx) => {
-            carCtx.beginPath(); carCtx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
-            carCtx.fillStyle = pt.type === '刮傷' ? '#ef4444' : '#2563eb';
-            carCtx.fill(); carCtx.strokeStyle = '#ffffff'; carCtx.lineWidth = 2; carCtx.stroke();
-
-            carCtx.fillStyle = '#ffffff'; carCtx.font = 'bold 9px sans-serif';
-            carCtx.fillText(idx + 1, pt.x - 3, pt.y + 3);
-        });
-    }
-
-    function setDamageType(type, btn) {
-        currentDamageType = type;
-        document.querySelectorAll('.damage-btn-group button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-    function clearDamage() { damagePoints = []; drawCarTopView(); }
-
-    function saveRecord() {
-        const plate = document.getElementById('field-plate').value.trim();
-        if (!plate || plate === "AI 辨識中...") { alert('請輸入車牌！'); return; }
-
-        const damageText = damagePoints.length > 0 
-            ? damagePoints.map(p => `${p.part}(${p.type})`).join(', ') 
-            : '無明顯傷痕';
-
-        const id = Date.now();
-        const newRecord = {
-            id: id,
-            plate: plate.toUpperCase(),
-            photo: currentPhotoBase64,
-            wash: document.getElementById('field-wash').value,
-            mileage: document.getElementById('field-mileage').value || '未填',
-            damage: damageText,
-            notes: document.getElementById('field-notes').value || '無',
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-        };
-
-        db.child(id).set(newRecord);
-        closeModal();
-    }
-
-    function updateOverviewStats() {
-        document.getElementById('stat-total').innerText = `${recordsList.length} 台`;
-        document.getElementById('stat-waiting').innerText = `${recordsList.length} 台`;
-        document.getElementById('stat-wash').innerText = `${recordsList.filter(r => r.wash === '是').length} 台`;
-        document.getElementById('stat-damage').innerText = `${recordsList.filter(r => r.damage && r.damage !== '無明顯傷痕').length} 台`;
-        document.getElementById('record-count-text').innerText = `共 ${recordsList.length} 筆記錄`;
-    }
-
-    function renderRecords() {
-        const container = document.getElementById('records-container');
-        if (recordsList.length === 0) {
-            container.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 40px 0;">目前尚無任何進廠接待記錄</p>`;
-            return;
+            db.push(recordData, (err) => {
+                if (err) {
+                    alert("儲存失敗，請檢查網路連線");
+                } else {
+                    closeRegisterModal();
+                }
+            });
         }
 
-        container.innerHTML = '';
-        recordsList.forEach(r => {
-            const card = document.createElement('div');
-            card.className = 'record-card';
-            card.innerHTML = `
-                <div class="record-header">
-                    <span class="record-plate">${r.plate}</span>
-                    <span style="font-size:12px; color:#64748b;">${r.time}</span>
+        // 9. 渲染歷史列表
+        function renderRecords() {
+            const container = document.getElementById('records-container');
+            const searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
+
+            const filtered = recordsList.filter(item => {
+                return item.plate.toLowerCase().includes(searchKeyword) ||
+                       item.owner.toLowerCase().includes(searchKeyword) ||
+                       item.phone.includes(searchKeyword);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 text-center text-slate-400 border border-slate-200">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                        <p class="text-sm">尚無相關進廠紀錄</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => `
+                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex items-start space-x-3">
+                        ${item.photo ? `<img src="${item.photo}" class="w-16 h-16 rounded-lg object-cover border border-slate-200 flex-shrink-0">` : `
+                            <div class="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xl flex-shrink-0">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                        `}
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg font-mono font-bold text-slate-900">${item.plate}</span>
+                                <span class="px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusBadgeClass(item.status)}">${item.status}</span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                                <span><i class="fa-solid fa-user"></i> ${item.owner}</span>
+                                <span><i class="fa-solid fa-phone"></i> ${item.phone}</span>
+                                <span><i class="fa-regular fa-clock"></i> ${new Date(item.timestamp).toLocaleString('zh-TW')}</span>
+                            </div>
+                            <p class="text-xs text-slate-700 mt-2 bg-slate-50 p-2 rounded border border-slate-100">${item.reason}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto justify-end">
+                        <button onclick="deleteRecord('${item.id}')" class="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-50">刪除</button>
+                    </div>
                 </div>
-                ${r.photo ? `<img src="${r.photo}" class="record-photo">` : ''}
-                <div style="font-size: 13px; color: #475569; display:flex; flex-direction:column; gap:2px; margin-top:4px;">
-                    <div>洗車：<strong>${r.wash}</strong> ｜ 里程：${r.mileage} km</div>
-                    <div>車損：<strong style="color:${r.damage !== '無明顯傷痕' ? '#d97706' : '#10b981'}">${r.damage}</strong></div>
-                    <div>備註：${r.notes}</div>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
+            `).join('');
+        }
 
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.add('active');
-        btn.classList.add('active');
-    }
+        // 10. 刪除紀錄
+        function deleteRecord(id) {
+            if (confirm("確定要刪除這筆紀錄嗎？")) {
+                db.child(id).remove();
+            }
+        }
 
-    function openModal(type) {
-        document.getElementById('form-modal').style.display = 'flex';
-        document.getElementById('photo-preview-group').style.display = type === 'ocr' ? 'flex' : 'none';
-        document.getElementById('ocr-status-text').innerText = "";
-        document.getElementById('field-plate').value = "";
-        currentPhotoBase64 = "";
-        clearDamage();
-        setTimeout(initCarCanvas, 100);
-    }
+        // 11. 更新上方統計數據
+        function updateStats() {
+            const todayStr = new Date().toLocaleDateString('zh-TW');
+            const todayCount = recordsList.filter(r => r.dateStr === todayStr).length;
+            const pendingCount = recordsList.filter(r => r.status !== '已完工').length;
 
-    function closeModal() {
-        document.getElementById('form-modal').style.display = 'none';
-    }
-</script>
+            document.getElementById('stat-today').innerText = todayCount;
+            document.getElementById('stat-pending').innerText = pendingCount;
+        }
 
+        // 12. 狀態顏色輔助函式
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case '已完工': return 'bg-emerald-100 text-emerald-700';
+                case '施工中': return 'bg-amber-100 text-amber-700';
+                default: return 'bg-slate-100 text-slate-600';
+            }
+        }
+
+        // Modal 控制邏輯
+        function openRegisterModal() {
+            removePhoto();
+            document.getElementById('field-plate').value = "";
+            document.getElementById('field-owner').value = "";
+            document.getElementById('field-phone').value = "";
+            document.getElementById('field-reason').value = "";
+            document.getElementById('field-status').value = "待處理";
+            document.getElementById('register-modal').classList.remove('hidden');
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('register-modal').classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
