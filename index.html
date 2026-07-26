@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>智慧車輛進廠管理系統</title>
 
-    <!-- 1. Tesseract.js 免費車牌 OCR 辨識引擎 -->
+    <!-- Tesseract.js OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-    <!-- 2. 全球即時廣播 MQTT SDK (多機/跨裝置 0.5 秒同步) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <!-- Firebase JS SDK (雲端即時同步) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <style>
         :root {
@@ -19,35 +20,31 @@
             --card-bg: #ffffff;
             --text-color: #0f172a;
             --border-color: #e2e8f0;
-            --green-btn: #10b981;
+            --green-btn: #059669;
             --danger-color: #ef4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; max-width: 500px; margin: auto; }
 
-        /* 藍色頂欄區域 (復刻圖片 UI) */
         .top-header { background: var(--header-bg); padding: 16px; border-radius: 0 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
         .header-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-        .user-info { font-size: 14px; font-weight: bold; line-height: 1.4; }
+        .user-info { font-size: 15px; font-weight: bold; line-height: 1.4; }
         .user-sub { font-size: 11px; opacity: 0.85; font-weight: normal; }
 
         .btn-group-top { display: flex; gap: 6px; }
         .btn-top { border: none; border-radius: 8px; padding: 8px 12px; font-weight: bold; font-size: 13px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; }
-        .btn-ocr { background: #059669; }
+        .btn-ocr { background: var(--green-btn); }
         .btn-manual { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4); }
         .btn-logout { background: #9f1239; }
 
-        /* 跑馬燈公告 */
         .marquee-box { background: rgba(0, 0, 0, 0.2); margin-top: 12px; padding: 6px 10px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; }
         .marquee-tag { background: #f59e0b; color: white; font-weight: bold; padding: 1px 6px; border-radius: 4px; font-size: 10px; flex-shrink: 0; }
         .marquee-text { display: inline-block; animation: marquee 12s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
-        /* 內容容器 */
         .content { padding: 16px; }
 
-        /* 概況卡片 2x2 格線 (復刻圖片 2) */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
         .stat-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .stat-title { font-size: 13px; color: #64748b; font-weight: bold; }
@@ -57,21 +54,16 @@
         .val-amber { color: #d97706; }
 
         .system-status-card { background: white; border-radius: 12px; padding: 14px; border: 1px solid var(--border-color); margin-top: 12px; }
-        .status-header { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 14px; margin-bottom: 6px; }
-        .status-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
 
-        /* 接待記錄清單 */
         .record-card { background: white; border-radius: 12px; padding: 14px; border: 1px solid var(--border-color); margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
         .record-header { display: flex; justify-content: space-between; align-items: center; }
         .record-plate { font-size: 18px; font-weight: bold; color: var(--primary-blue); }
         .record-photo { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 4px; }
 
-        /* 底部導航欄 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; max-width: 500px; margin: auto; z-index: 100; }
         .nav-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
         .nav-btn.active { color: var(--primary-blue); }
 
-        /* 彈窗 Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 16px 8px; z-index: 1000; }
         .modal-card { background: white; width: 100%; max-width: 480px; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 60px; }
 
@@ -80,7 +72,6 @@
         input, textarea, select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
         .plate-input { font-size: 24px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; text-align: center; color: var(--primary-blue); border: 2px solid var(--primary-blue); }
 
-        /* 車損點選空照圖容器 */
         .car-topview-box { text-align: center; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px dashed var(--primary-blue); }
         canvas { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: crosshair; }
         .damage-btn-group { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
@@ -89,11 +80,12 @@
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+
+        .status-loading { font-size: 12px; color: #2563eb; font-weight: bold; text-align: center; margin-top: 4px; }
     </style>
 </head>
 <body>
 
-<!-- 頂部藍色狀態欄 (完全復刻原 UI) -->
 <div class="top-header">
     <div class="header-main">
         <div>
@@ -108,12 +100,11 @@
     </div>
     <div class="marquee-box">
         <span class="marquee-tag">📣 公告</span>
-        <span class="marquee-text">⚡ 跨裝置多機即時連線運作中！每日例行消毒與進廠車輛外觀檢查落實記錄。</span>
+        <span class="marquee-text">⚡ 雲端資料庫已連線！相機拍車牌自動壓縮並跨裝置同步。</span>
     </div>
 </div>
 
 <div class="content">
-    <!-- 頁籤 1：概況統計 -->
     <div id="tab-overview" class="tab-content active">
         <h3 style="font-size: 16px; margin-bottom: 8px;">今日接車概況</h3>
         <div class="stats-grid">
@@ -136,14 +127,13 @@
         </div>
 
         <div class="system-status-card">
-            <div class="status-header">🛡️ 系統運行正常</div>
-            <div class="status-desc">
-                已整合開源 AI 車牌辨識與 MQTT 全球即時同步廣播服務。手機與電腦無須登入同帳號，資料自動 0.5 秒同步更新！
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ 系統運作狀態</div>
+            <div style="font-size: 12px; color: #64748b; line-height: 1.5;" id="sync-status-text">
+                📡 正在連線至雲端同步資料庫...
             </div>
         </div>
     </div>
 
-    <!-- 頁籤 2：接待記錄清單 -->
     <div id="tab-records" class="tab-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h3 style="font-size: 16px;">進廠車輛接待清單</h3>
@@ -155,7 +145,6 @@
     </div>
 </div>
 
-<!-- 底部頁籤導航欄 -->
 <div class="bottom-nav">
     <button class="nav-btn active" onclick="switchTab('overview', this)">
         <span>📊</span> 概況統計
@@ -165,31 +154,29 @@
     </button>
 </div>
 
-<!-- 隱藏式檔案上傳元件 -->
-<input type="file" id="hidden-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleOCRImage(event)">
+<!-- 檔案選取元件 (移除 capture 參數確保相簿與相機皆可選取) -->
+<input type="file" id="hidden-file-input" accept="image/*" style="display:none;" onchange="handleOCRImage(event)">
 
-<!-- 接待登記/拍攝彈窗 Modal -->
 <div class="modal-overlay" id="form-modal">
     <div class="modal-card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="font-size: 16px;" id="modal-title">車輛進廠接待登記</h3>
+            <h3 style="font-size: 16px;">車輛進廠接待登記</h3>
             <button style="border:none; background:none; font-size:20px; cursor:pointer;" onclick="closeModal()">✕</button>
         </div>
 
-        <!-- 辨識與相片預覽 -->
         <div class="form-group" id="photo-preview-group" style="display:none;">
             <label>📷 車牌/現場照片</label>
             <img id="modal-photo-preview" style="width:100%; max-height:160px; object-fit:contain; border-radius:8px; background:#000;">
+            <div id="ocr-status-text" class="status-loading"></div>
         </div>
 
         <div class="form-group">
-            <label>🚗 車牌號碼 (可手動修改校正)</label>
+            <label>🚗 車牌號碼</label>
             <input type="text" id="field-plate" class="plate-input" placeholder="ABC-1234">
         </div>
 
-        <!-- 🚗 車損精細空照圖點選 -->
         <div class="form-group">
-            <label>🛠️ 車損點選 (請在下方車輛空照圖點選受損位置)</label>
+            <label>🛠️ 車損點選 (點擊空照圖標記細節部位)</label>
             <div class="car-topview-box">
                 <canvas id="carCanvas" width="300" height="240"></canvas>
                 <div class="damage-btn-group">
@@ -216,56 +203,45 @@
             <textarea id="field-notes" rows="2" placeholder="請填寫交代事項..."></textarea>
         </div>
 
-        <button class="btn-top btn-ocr" style="width:100%; padding:12px; font-size:16px; margin-top:6px;" onclick="saveRecord()">☁️ 儲存並即時廣播同步</button>
+        <button class="btn-top btn-ocr" style="width:100%; padding:12px; font-size:16px; margin-top:6px;" onclick="saveRecord()">☁️ 儲存並雲端同步</button>
     </div>
 </div>
 
-<!-- OCR 圖片處理 Canvas -->
 <canvas id="procCanvas" style="display:none;"></canvas>
 
 <script>
-    /* ===================================================
-       1. 全球 MQTT 免費即時廣播 (解決電腦與手機不同步問題)
-    =================================================== */
-    const SYNC_TOPIC = "taiwan_garage_sync_channel_2026";
-    let mqttClient;
+    // Firebase Realtime Database
+    const firebaseConfig = {
+        databaseURL: "https://garage-sync-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref("garage_records");
+
     let recordsList = [];
     let currentPhotoBase64 = "";
 
-    function initMQTT() {
-        const clientID = "client_garage_" + Math.random().toString(16).substr(2, 8);
-        mqttClient = new Paho.MQTT.Client("broker.hivemq.com", 8000, clientID);
+    // 即時同步
+    db.on('value', (snapshot) => {
+        const data = snapshot.val();
+        recordsList = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                recordsList.unshift(data[key]);
+            });
+        }
+        updateOverviewStats();
+        renderRecords();
+        document.getElementById('sync-status-text').innerText = "⚡ 雲端即時連線正常！手機與電腦資料 100% 同步中。";
+    });
 
-        mqttClient.onConnectionLost = function() {
-            setTimeout(initMQTT, 3000);
-        };
-
-        mqttClient.onMessageArrived = function(message) {
-            try {
-                const payload = JSON.parse(message.payloadString);
-                if (payload.action === "ADD_RECORD") {
-                    recordsList.unshift(payload.data);
-                    updateOverviewStats();
-                    renderRecords();
-                }
-            } catch (e) { console.error(e); }
-        };
-
-        mqttClient.connect({
-            onSuccess: function() {
-                mqttClient.subscribe(SYNC_TOPIC);
-            },
-            useSSL: false
-        });
-    }
-
-    /* ===================================================
-       2. 高準確度車牌 OCR 辨識邏輯
-    =================================================== */
+    /* 觸發檔案上傳 */
     function triggerCameraOCR() {
-        document.getElementById('hidden-file-input').click();
+        const fileInput = document.getElementById('hidden-file-input');
+        fileInput.value = ''; // 清空重置
+        fileInput.click();
     }
 
+    /* 處理圖片：壓縮 + 車牌 OCR 辨識 */
     async function handleOCRImage(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -273,109 +249,103 @@
         openModal('ocr');
         const previewImg = document.getElementById('modal-photo-preview');
         const plateInput = document.getElementById('field-plate');
+        const statusText = document.getElementById('ocr-status-text');
+        
         document.getElementById('photo-preview-group').style.display = 'flex';
+        plateInput.value = "";
+        statusText.innerText = "⏳ 正在壓縮照片與進行 AI 辨識...";
 
-        // 轉 Base64
-        const reader = new FileReader();
-        reader.onload = async function(evt) {
-            currentPhotoBase64 = evt.target.result;
+        try {
+            // 1. 自動壓縮圖片 (長寬上限 800px)
+            currentPhotoBase64 = await resizeImage(file, 800, 0.7);
             previewImg.src = currentPhotoBase64;
 
-            plateInput.value = "AI 辨識中...";
+            // 2. 進行 Tesseract OCR 辨識
+            const worker = await Tesseract.createWorker('eng');
+            await worker.setParameters({
+                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            });
+            const res = await worker.recognize(currentPhotoBase64);
+            await worker.terminate();
 
-            try {
-                // Canvas 對比度與黑白化增強
-                const procBinarized = await binarizeImage(currentPhotoBase64);
-
-                const worker = await Tesseract.createWorker('eng');
-                await worker.setParameters({
-                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-                });
-
-                const res = await worker.recognize(procBinarized);
-                await worker.terminate();
-
-                const cleanPlate = fixTaiwanPlateFormat(res.data.text);
-                plateInput.value = cleanPlate;
-
-            } catch (err) {
-                plateInput.value = "";
-                alert('辨識遇到狀況，請手動輸入車牌。');
-            }
-        };
-        reader.readAsDataURL(file);
+            const parsedPlate = fixTaiwanPlateFormat(res.data.text);
+            plateInput.value = parsedPlate;
+            statusText.innerText = parsedPlate === "辨識失敗" ? "⚠️ 無法自動識別車牌，請手動輸入" : "✅ 辨識完成！";
+        } catch (err) {
+            console.error(err);
+            statusText.innerText = "⚠️ 辨識過程發生錯誤，請手動輸入車牌";
+        }
     }
 
-    // 圖像二值化預處理
-    function binarizeImage(base64) {
-        return new Promise(resolve => {
-            const img = new Image();
-            img.src = base64;
-            img.onload = () => {
-                const cvs = document.getElementById('procCanvas');
-                const ctx = cvs.getContext('2d');
-                cvs.width = img.width; cvs.height = img.height;
-                ctx.drawImage(img, 0, 0);
+    /* 圖片等比例壓縮 Helper */
+    function resizeImage(file, maxSide = 800, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width;
+                    let height = img.height;
 
-                const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
-                const d = imgData.data;
-                for (let i = 0; i < d.length; i += 4) {
-                    let avg = (d[i] + d[i+1] + d[i+2]) / 3;
-                    let v = avg > 115 ? 255 : 0;
-                    d[i] = v; d[i+1] = v; d[i+2] = v;
-                }
-                ctx.putImageData(imgData, 0, 0);
-                resolve(cvs.toDataURL('image/jpeg'));
+                    if (width > maxSide || height > maxSide) {
+                        if (width > height) {
+                            height = Math.round((height * maxSide) / width);
+                            width = maxSide;
+                        } else {
+                            width = Math.round((width * maxSide) / height);
+                            height = maxSide;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
             };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
     }
 
-    // 台灣車牌修復規則
     function fixTaiwanPlateFormat(raw) {
         let clean = raw.replace(/[^A-Z0-9]/gi, '').toUpperCase();
         let match = clean.match(/[A-Z0-9]{6,7}/);
         if (!match) return "辨識失敗";
-
         let str = match[0];
-        if (str.length === 7) {
-            let letters = str.substring(0, 3).replace(/0/g, 'O').replace(/1/g, 'I');
-            let numbers = str.substring(3, 7).replace(/O/g, '0').replace(/I/g, '1');
-            return `${letters}-${numbers}`;
-        }
-        if (str.length === 6) {
-            return `${str.substring(0, 3)}-${str.substring(3, 6)}`;
-        }
+        if (str.length === 7) return `${str.substring(0, 3)}-${str.substring(3, 7)}`;
+        if (str.length === 6) return `${str.substring(0, 3)}-${str.substring(3, 6)}`;
         return str;
     }
 
-    /* ===================================================
-       3. 詳細車輛俯視/空照圖 (Top-View) 與精細部位點選
-    =================================================== */
+    /* 空照圖與點選部位 */
     let carCanvas, carCtx;
     let damagePoints = [];
     let currentDamageType = '刮傷';
 
-    // 定義車體空照圖各區域座標範圍 (300 x 240)
     function getCarPartName(x, y) {
-        if (y < 40) return "前保桿/水箱護罩";
+        if (y < 40) return "前保桿";
         if (y >= 40 && y < 85 && x >= 90 && x <= 210) return "引擎蓋";
         if (y >= 85 && y < 120 && x >= 90 && x <= 210) return "前擋風玻璃";
         if (y >= 120 && y < 165 && x >= 90 && x <= 210) return "車頂";
         if (y >= 165 && y < 195 && x >= 90 && x <= 210) return "後擋風玻璃";
-        if (y >= 195 && y <= 230 && x >= 90 && x <= 210) return "後車廂/後保桿";
+        if (y >= 195 && y <= 230 && x >= 90 && x <= 210) return "後車廂";
         
-        // 兩側與輪胎
         if (x < 90) {
-            if (y < 70) return "左前輪/左前葉子板";
-            if (y >= 70 && y < 130) return "左前車門";
-            if (y >= 130 && y < 180) return "左後車門";
-            return "左後輪/左後葉子板";
+            if (y < 70) return "左前葉子板";
+            if (y >= 70 && y < 130) return "左前門";
+            if (y >= 130 && y < 180) return "左後門";
+            return "左後葉子板";
         }
         if (x > 210) {
-            if (y < 70) return "右前輪/右前葉子板";
-            if (y >= 70 && y < 130) return "右前車門";
-            if (y >= 130 && y < 180) return "右後車門";
-            return "右後輪/右後葉子板";
+            if (y < 70) return "右前葉子板";
+            if (y >= 70 && y < 130) return "右前門";
+            if (y >= 130 && y < 180) return "右後門";
+            return "右後葉子板";
         }
         return "車身週邊";
     }
@@ -387,74 +357,36 @@
             const rect = carCanvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            const part = getCarPartName(x, y);
-
-            damagePoints.push({ x, y, part, type: currentDamageType });
+            damagePoints.push({ x, y, part: getCarPartName(x, y), type: currentDamageType });
             drawCarTopView();
         };
         drawCarTopView();
     }
 
-    // 繪製高解析度車輛俯視空照圖
     function drawCarTopView() {
         if (!carCtx) return;
         carCtx.clearRect(0, 0, carCanvas.width, carCanvas.height);
 
-        // 背景微格線
-        carCtx.strokeStyle = "#f1f5f9"; carCtx.lineWidth = 1;
-        for(let i=0; i<300; i+=20) { carCtx.beginPath(); carCtx.moveTo(i,0); carCtx.lineTo(i,240); carCtx.stroke(); }
-
-        // 車身主體輪廓
-        carCtx.fillStyle = "#e2e8f0";
-        carCtx.strokeStyle = "#334155";
-        carCtx.lineWidth = 2.5;
-
-        // 輪胎 (四輪)
         carCtx.fillStyle = "#1e293b";
-        carCtx.fillRect(60, 45, 18, 35);  // 左前輪
-        carCtx.fillRect(222, 45, 18, 35); // 右前輪
-        carCtx.fillRect(60, 160, 18, 35); // 左後輪
-        carCtx.fillRect(222, 160, 18, 35);// 右後輪
+        carCtx.fillRect(60, 45, 18, 35); carCtx.fillRect(222, 45, 18, 35);
+        carCtx.fillRect(60, 160, 18, 35); carCtx.fillRect(222, 160, 18, 35);
 
-        // 車主體 (圓角車身)
-        carCtx.fillStyle = "#ffffff";
-        carCtx.beginPath();
-        carCtx.roundRect(80, 20, 140, 200, 25);
-        carCtx.fill();
-        carCtx.stroke();
+        carCtx.fillStyle = "#ffffff"; carCtx.strokeStyle = "#334155"; carCtx.lineWidth = 2.5;
+        carCtx.beginPath(); carCtx.roundRect(80, 20, 140, 200, 25); carCtx.fill(); carCtx.stroke();
 
-        // 車窗與車頂區域細節
         carCtx.fillStyle = "#cbd5e1";
-        // 前擋風玻璃
         carCtx.beginPath(); carCtx.moveTo(95, 85); carCtx.lineTo(205, 85); carCtx.lineTo(195, 115); carCtx.lineTo(105, 115); carCtx.closePath(); carCtx.fill(); carCtx.stroke();
-        // 後擋風玻璃
         carCtx.beginPath(); carCtx.moveTo(105, 165); carCtx.lineTo(195, 165); carCtx.lineTo(205, 190); carCtx.lineTo(95, 190); carCtx.closePath(); carCtx.fill(); carCtx.stroke();
-        // 天窗 / 車頂標示
-        carCtx.strokeRect(110, 125, 80, 30);
 
-        // 前後車燈
-        carCtx.fillStyle = "#fef08a"; // 前大燈
-        carCtx.fillRect(90, 20, 20, 6); carCtx.fillRect(190, 20, 20, 6);
-        carCtx.fillStyle = "#f87171"; // 後尾燈
-        carCtx.fillRect(90, 214, 20, 6); carCtx.fillRect(190, 214, 20, 6);
-
-        // 文字標註
         carCtx.fillStyle = "#64748b"; carCtx.font = "bold 11px sans-serif";
         carCtx.fillText("▲ 車頭 FRONT", 112, 14);
 
-        // 繪製點選的車損點
         damagePoints.forEach((pt, idx) => {
-            carCtx.beginPath();
-            carCtx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+            carCtx.beginPath(); carCtx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
             carCtx.fillStyle = pt.type === '刮傷' ? '#ef4444' : '#2563eb';
-            carCtx.fill();
-            carCtx.strokeStyle = '#ffffff';
-            carCtx.lineWidth = 2;
-            carCtx.stroke();
+            carCtx.fill(); carCtx.strokeStyle = '#ffffff'; carCtx.lineWidth = 2; carCtx.stroke();
 
-            // 標記數字
-            carCtx.fillStyle = '#ffffff';
-            carCtx.font = 'bold 9px sans-serif';
+            carCtx.fillStyle = '#ffffff'; carCtx.font = 'bold 9px sans-serif';
             carCtx.fillText(idx + 1, pt.x - 3, pt.y + 3);
         });
     }
@@ -466,21 +398,18 @@
     }
     function clearDamage() { damagePoints = []; drawCarTopView(); }
 
-    /* ===================================================
-       4. 狀態更新與頁面切換
-    =================================================== */
+    /* 寫入 Firebase 資料庫 */
     function saveRecord() {
         const plate = document.getElementById('field-plate').value.trim();
-        if (!plate || plate === "AI 辨識中...") {
-            alert('請確認車牌號碼！'); return;
-        }
+        if (!plate || plate === "AI 辨識中...") { alert('請填寫或確認車牌號碼！'); return; }
 
         const damageText = damagePoints.length > 0 
             ? damagePoints.map(p => `${p.part}(${p.type})`).join(', ') 
             : '無明顯傷痕';
 
+        const id = Date.now();
         const newRecord = {
-            id: Date.now(),
+            id: id,
             plate: plate.toUpperCase(),
             photo: currentPhotoBase64,
             wash: document.getElementById('field-wash').value,
@@ -490,32 +419,15 @@
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         };
 
-        // 本地更新
-        recordsList.unshift(newRecord);
-        updateOverviewStats();
-        renderRecords();
-
-        // MQTT 全球廣播給所有開著網頁的手機/電腦
-        if (mqttClient && mqttClient.isConnected()) {
-            const msg = new Paho.MQTT.Message(JSON.stringify({ action: "ADD_RECORD", data: newRecord }));
-            msg.destinationName = SYNC_TOPIC;
-            mqttClient.send(msg);
-        }
-
+        db.child(id).set(newRecord);
         closeModal();
-        alert('✅ 已成功登記，同步推送至所有裝置！');
     }
 
     function updateOverviewStats() {
         document.getElementById('stat-total').innerText = `${recordsList.length} 台`;
         document.getElementById('stat-waiting').innerText = `${recordsList.length} 台`;
-        
-        const washCount = recordsList.filter(r => r.wash === '是').length;
-        document.getElementById('stat-wash').innerText = `${washCount} 台`;
-
-        const damageCount = recordsList.filter(r => r.damage && r.damage !== '無明顯傷痕').length;
-        document.getElementById('stat-damage').innerText = `${damageCount} 台`;
-
+        document.getElementById('stat-wash').innerText = `${recordsList.filter(r => r.wash === '是').length} 台`;
+        document.getElementById('stat-damage').innerText = `${recordsList.filter(r => r.damage && r.damage !== '無明顯傷痕').length} 台`;
         document.getElementById('record-count-text').innerText = `共 ${recordsList.length} 筆記錄`;
     }
 
@@ -537,8 +449,8 @@
                 </div>
                 ${r.photo ? `<img src="${r.photo}" class="record-photo">` : ''}
                 <div style="font-size: 13px; color: #475569; display:flex; flex-direction:column; gap:2px; margin-top:4px;">
-                    <div>洗車服務：<strong>${r.wash}</strong> ｜ 里程：${r.mileage} km</div>
-                    <div>車損紀錄：<strong style="color:${r.damage !== '無明顯傷痕' ? '#d97706' : '#10b981'}">${r.damage}</strong></div>
+                    <div>洗車：<strong>${r.wash}</strong> ｜ 里程：${r.mileage} km</div>
+                    <div>車損：<strong style="color:${r.damage !== '無明顯傷痕' ? '#d97706' : '#10b981'}">${r.damage}</strong></div>
                     <div>備註：${r.notes}</div>
                 </div>
             `;
@@ -556,6 +468,7 @@
     function openModal(type) {
         document.getElementById('form-modal').style.display = 'flex';
         document.getElementById('photo-preview-group').style.display = type === 'ocr' ? 'flex' : 'none';
+        document.getElementById('ocr-status-text').innerText = "";
         document.getElementById('field-plate').value = "";
         currentPhotoBase64 = "";
         clearDamage();
@@ -565,10 +478,6 @@
     function closeModal() {
         document.getElementById('form-modal').style.display = 'none';
     }
-
-    window.onload = function() {
-        initMQTT();
-    };
 </script>
 
 </body>
