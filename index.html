@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>政治人物社群圖卡產生器 Pro</title>
+    <title>政壇圖卡大師 Pro (行動App版)</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -12,247 +12,260 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-        }
-        .card-shadow {
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
+        body { font-family: 'Noto Sans TC', sans-serif; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-0 sm:p-4">
 
-    <header class="bg-slate-800 border-b border-slate-700 py-4 px-6 shadow-md">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="w-full max-w-md bg-slate-900 sm:rounded-[40px] sm:border-[10px] sm:border-slate-800 shadow-2xl flex flex-col h-[100vh] sm:h-[860px] overflow-hidden relative">
+        
+        <!-- Status Bar -->
+        <div class="bg-slate-950/80 text-slate-400 px-6 py-2.5 text-xs flex justify-between items-center select-none shrink-0 border-b border-slate-800/60">
+            <span class="font-bold text-white">20:08</span>
+            <div class="flex items-center space-x-2.5">
+                <i class="fa-solid fa-signal text-[10px]"></i>
+                <i class="fa-solid fa-wifi text-[10px]"></i>
+                <i class="fa-solid fa-battery-full text-emerald-400 text-sm"></i>
+            </div>
+        </div>
+
+        <!-- App Header Bar -->
+        <header class="bg-slate-900/90 backdrop-blur px-5 py-3.5 flex items-center justify-between border-b border-slate-800 shrink-0">
             <div class="flex items-center space-x-3">
-                <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg">
-                    <i class="fa-solid fa-bullhorn text-xl"></i>
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg">
+                    <i class="fa-solid fa-bullhorn"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-wide">政壇風社群圖卡產生器 Pro</h1>
-                    <p class="text-xs text-slate-400">一秒製作吸睛、專業、有氣勢的政策與關懷圖卡</p>
+                    <h1 class="font-black text-sm text-white tracking-wide">政壇圖卡大師 App</h1>
+                    <p class="text-[10px] text-blue-400 font-medium">智慧氣象與市政連線</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2 flex-wrap gap-2">
-                <button onclick="loadTemplate('rain')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg font-medium transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-cloud-rain text-blue-400"></i> 下雨天提醒
-                </button>
-                <button onclick="loadTemplate('urgent')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg font-medium transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> 緊急公告
-                </button>
-                <button onclick="loadTemplate('policy')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg font-medium transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-handshake-angle text-emerald-400"></i> 地方會勘
-                </button>
-            </div>
-        </div>
-    </header>
+            <button onclick="downloadCard()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md flex items-center space-x-1.5 transition active:scale-95 cursor-pointer">
+                <i class="fa-solid fa-download"></i>
+                <span>匯出</span>
+            </button>
+        </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        <!-- Controls Column -->
-        <div class="lg:col-span-5 bg-slate-800/80 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-6">
-            <h2 class="text-lg font-bold border-b border-slate-700 pb-3 flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-blue-500"></i> 圖卡內容與風格設定
-            </h2>
-
-            <!-- Theme / Color Palette Selection -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">圖卡風格主題配色</label>
-                <div class="grid grid-cols-4 gap-2">
-                    <button type="button" onclick="setTheme('blue')" id="theme-blue" class="py-2 px-3 rounded-xl border border-blue-500 bg-blue-900/40 text-xs font-bold text-center transition">政壇藍</button>
-                    <button type="button" onclick="setTheme('green')" id="theme-green" class="py-2 px-3 rounded-xl border border-slate-700 bg-emerald-900/40 text-xs font-bold text-center transition">深綠政風</button>
-                    <button type="button" onclick="setTheme('orange')" id="theme-orange" class="py-2 px-3 rounded-xl border border-slate-700 bg-amber-900/40 text-xs font-bold text-center transition">活力橘</button>
-                    <button type="button" onclick="setTheme('dark')" id="theme-dark" class="py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-center transition">質感黑</button>
-                </div>
-            </div>
-
-            <!-- Aspect Ratio Selection -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">圖卡尺寸比例</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="setAspect('square')" id="aspect-square" class="py-2 px-3 rounded-xl border border-blue-500 bg-blue-600/20 text-xs font-bold transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-square"></i> 正方形 (1:1 貼文)
-                    </button>
-                    <button type="button" onclick="setAspect('story')" id="aspect-story" class="py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-mobile-screen"></i> 限動直式 (9:16)
-                    </button>
-                </div>
-            </div>
-
-            <!-- Avatar Size Control -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">照片大小與顯示模式</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="setAvatarSize('large')" id="size-large" class="py-2 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition">大半身照</button>
-                    <button type="button" onclick="setAvatarSize('small')" id="size-small" class="py-2 px-2 rounded-xl border border-blue-500 bg-blue-600/20 text-[11px] font-bold text-center transition">精巧照片</button>
-                    <button type="button" onclick="setAvatarSize('none')" id="size-none" class="py-2 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition">不放照片</button>
-                </div>
-            </div>
-
-            <!-- Tag / Category -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">上方標籤 (Tag)</label>
-                <input type="text" id="inputTag" value="【 關心市民 · 隨時守護 】" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
-            </div>
-
-            <!-- Main Title -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">主標題 (大字)</label>
-                <textarea id="inputTitle" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition resize-none" oninput="updateCard()">雨勢漸大！出門請注意安全，減速慢行</textarea>
-            </div>
-
-            <!-- Subtitle / Body -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">詳細說明文字</label>
-                <textarea id="inputSubtitle" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離，平安就是給家人最好的承諾。</textarea>
-            </div>
-
-            <!-- Politician Info -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="space-y-2">
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">姓名 / 署名</label>
-                    <input type="text" id="inputName" value="立法委員 參選人" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">頭銜 / 標語</label>
-                    <input type="text" id="inputTitleRole" value="為您打拼 每一刻" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
-                </div>
-            </div>
-
-            <!-- Contact / Phone info -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">右下角服務專線 / 選區備註</label>
-                <input type="text" id="inputContact" value="0800-READY" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
-            </div>
-
-            <!-- Avatar Image Source Selector & Upload -->
-            <div id="avatarUploadSection" class="space-y-3">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
-                    <span>政治人物半身照</span>
-                    <span class="text-[10px] text-blue-400">支援上傳圖片或貼網址</span>
-                </label>
-                
-                <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-700">
-                    <button type="button" id="tabUrlBtn" onclick="switchImageTab('url')" class="py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow">圖片網址</button>
-                    <button type="button" id="tabFileBtn" onclick="switchImageTab('file')" class="py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">上傳檔案</button>
-                </div>
-
-                <div id="imageUrlContainer" class="space-y-2">
-                    <input type="text" id="inputAvatarUrl" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateAvatarFromUrl()" placeholder="輸入圖片網址...">
-                </div>
-
-                <div id="imageFileContainer" class="space-y-2 hidden">
-                    <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer bg-slate-900 hover:bg-slate-700/50 transition">
-                        <div class="flex flex-col items-center justify-center pt-3 pb-3">
-                            <i class="fa-solid fa-cloud-arrow-up text-blue-400 text-xl mb-1"></i>
-                            <p class="text-xs text-slate-400"><span class="font-semibold text-blue-400">點擊上傳照片</span> 或拖曳至此</p>
-                            <p class="text-[10px] text-slate-500">PNG, JPG</p>
-                        </div>
-                        <input type="file" id="inputAvatarFile" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                    </label>
-                </div>
-            </div>
-
-            <!-- Watermark Toggle -->
-            <div class="flex items-center justify-between pt-2">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">顯示底部裝飾條紋</span>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="toggleStripe" checked class="sr-only peer" onchange="updateCard()">
-                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-        </div>
-
-        <!-- Preview & Export Column -->
-        <div class="lg:col-span-7 flex flex-col items-center sticky top-6 space-y-4">
+        <main class="flex-1 overflow-y-auto p-4 space-y-5 pb-24">
             
-            <div class="w-full flex justify-between items-center px-2">
-                <span class="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                    <i class="fa-solid fa-eye text-emerald-400"></i> 即時視覺預覽
-                </span>
-                <span class="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                    支援高清社群匯出
-                </span>
+            <!-- AI Live Fetch Section -->
+            <div class="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 智慧即時資訊帶入
+                    </span>
+                    <span class="text-[10px] text-slate-400">連線官方資料庫</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="fetchLatestInfo('weather')" class="py-2 px-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow">
+                        <i class="fa-solid fa-cloud-sun text-xs"></i> 中央氣象署
+                    </button>
+                    <button onclick="fetchLatestInfo('taipei')" class="py-2 px-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow">
+                        <i class="fa-solid fa-building-columns text-xs"></i> 台北市政府
+                    </button>
+                </div>
+                <div id="aiStatus" class="text-[11px] text-slate-400 text-center italic hidden">正在連線取得最新即時資訊...</div>
             </div>
 
-            <!-- Card Render Area Wrapper -->
-            <div class="w-full overflow-x-auto flex justify-center p-2 bg-slate-950/60 rounded-2xl border border-slate-800 shadow-2xl">
+            <!-- Card Preview Section -->
+            <div class="flex flex-col items-center">
+                <div class="text-[11px] text-slate-400 mb-1.5 flex items-center justify-between w-full px-1">
+                    <span class="font-bold text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye text-emerald-400"></i> 即時視覺預覽 (不失真畫質)
+                    </span>
+                    <span class="text-blue-400 font-mono text-[10px] bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-500/25">1080x1080</span>
+                </div>
                 
-                <!-- The actual Exportable Card Container -->
-                <div id="captureCard" class="relative w-[480px] h-[480px] bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white flex flex-col justify-between overflow-hidden shadow-2xl transition-all duration-300 flex-shrink-0" style="aspect-ratio: 1/1;">
+                <!-- Card Capture Container with fixed styling for clean export -->
+                <div id="captureCard" class="relative w-full aspect-square bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between border border-blue-500/30" style="width: 100%; max-width: 440px; min-width: 320px;">
                     
-                    <!-- Dynamic Background Accents / Glows -->
-                    <div id="bgGlow1" class="absolute -top-20 -right-20 w-80 h-80 bg-blue-600/30 rounded-full blur-3xl pointer-events-none transition-colors duration-500"></div>
-                    <div id="bgGlow2" class="absolute bottom-0 -left-20 w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none transition-colors duration-500"></div>
+                    <!-- Background Glows -->
+                    <div class="absolute -top-16 -right-16 w-56 h-56 bg-blue-600/30 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="absolute bottom-0 -left-16 w-56 h-56 bg-indigo-600/20 rounded-full blur-2xl pointer-events-none"></div>
 
-                    <!-- Top Bar: Tag -->
-                    <div class="relative z-10 p-6 flex justify-between items-center">
-                        <div id="cardTagBadge" class="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg tracking-wider border border-blue-400/30">
+                    <!-- Top Bar Tag -->
+                    <div class="relative z-10 p-4.5 pb-0 flex justify-between items-center">
+                        <div id="cardTagBadge" class="bg-blue-600 text-white text-[11px] font-bold px-3.5 py-1 rounded-full shadow-md tracking-wider border border-blue-400/30">
                             【 關心市民 · 隨時守護 】
                         </div>
-                        <div class="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
-                            Official Card
+                        <div class="text-[9px] text-slate-400 tracking-widest uppercase font-semibold">
+                            Official
                         </div>
                     </div>
 
-                    <!-- Middle Content Area: Title & Subtitle + Character Image overlapping -->
-                    <div class="relative z-10 px-6 flex-1 flex flex-col justify-center space-y-3">
+                    <div class="relative z-10 px-4.5 flex-1 flex flex-col justify-center space-y-2.5">
                         
-                        <!-- Avatar Watermark/Image Layer -->
-                        <div id="avatarContainer" class="absolute right-4 bottom-0 w-64 h-full pointer-events-none flex items-end justify-end overflow-hidden opacity-90 transition-all duration-300">
-                            <img id="previewAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600" class="object-cover object-top h-[95%] w-full mask-image-gradient" crossorigin="anonymous" onerror="this.src='https://placehold.co/400x600/1e293b/94a3b8?text=Photo'">
+                        <!-- Avatar / Photo Layer -->
+                        <div id="avatarContainer" class="absolute right-0 bottom-0 w-44 h-full pointer-events-none flex items-end justify-end overflow-hidden opacity-95">
+                            <img id="previewAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600" class="object-cover object-top h-[92%] w-full" crossorigin="anonymous" style="max-width: none;">
                         </div>
 
-                        <!-- Text Information Container -->
-                        <div id="textContentWrapper" class="max-w-[70%] space-y-3 relative z-25 transition-all duration-300">
-                            <h2 id="previewTitle" class="text-2xl font-black leading-snug tracking-tight text-white drop-shadow-md">
+                        <!-- Text Container -->
+                        <div id="textContentWrapper" class="max-w-[70%] space-y-2 relative z-20">
+                            <h2 id="previewTitle" class="text-xl sm:text-2xl font-black leading-snug tracking-tight text-white drop-shadow-md">
                                 雨勢漸大！出門請注意安全，減速慢行
                             </h2>
-                            <p id="previewSubtitle" class="text-xs leading-relaxed text-slate-300 drop-shadow font-medium">
-                                氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離，平安就是給家人最好的承諾。
+                            <p id="previewSubtitle" class="text-[11px] sm:text-xs leading-relaxed text-slate-300 drop-shadow font-medium">
+                                氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離。
                             </p>
                         </div>
                     </div>
 
-                    <!-- Bottom Bar: Politician Info & Service Hotline -->
-                    <div class="relative z-10 p-6 pt-4 flex justify-between items-end bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                        <div class="flex items-center space-x-3">
-                            <div id="cardAvatarMini" class="w-12 h-12 rounded-full border-2 border-blue-400 overflow-hidden shadow-md bg-slate-800 flex-shrink-0">
+                    <!-- Bottom Bar Info -->
+                    <div class="relative z-10 p-4.5 pt-3 flex justify-between items-end bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+                        <div class="flex items-center space-x-2.5">
+                            <div id="cardAvatarMini" class="w-10 h-10 rounded-full border-2 border-blue-400 overflow-hidden shadow-md bg-slate-800 flex-shrink-0">
                                 <img id="previewAvatarMiniImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" class="w-full h-full object-cover object-top" crossorigin="anonymous">
                             </div>
                             <div>
-                                <div id="previewName" class="text-base font-bold tracking-wide text-white drop-shadow">立法委員 參選人</div>
-                                <div id="previewTitleRole" class="text-[11px] text-blue-300 font-semibold tracking-wider">為您打拼 每一刻</div>
+                                <div id="previewName" class="text-sm font-bold tracking-wide text-white drop-shadow">立法委員 辦公室</div>
+                                <div id="previewTitleRole" class="text-[10px] text-blue-300 font-semibold tracking-wider">為您打拼 每一刻</div>
                             </div>
                         </div>
 
                         <div class="text-right">
-                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">服務專線</div>
-                            <div id="previewContact" class="text-xs font-black tracking-wider text-blue-400 bg-black/40 px-2.5 py-1 rounded-lg border border-blue-500/30">
+                            <div class="text-[9px] text-slate-400 uppercase tracking-wider">服務專線</div>
+                            <div id="previewContact" class="text-[11px] font-black tracking-wider text-blue-400 bg-black/50 px-2 py-0.5 rounded border border-blue-500/30">
                                 0800-READY
                             </div>
                         </div>
                     </div>
 
-                    <!-- Bottom Accent Stripe -->
-                    <div id="bottomStripe" class="h-2 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
+                    <!-- Bottom Stripe -->
+                    <div id="bottomStripe" class="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
 
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 快速套用範本
+                </label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="loadTemplate('rain')" class="bg-slate-800/90 hover:bg-slate-700 p-2.5 rounded-xl border border-slate-700/80 text-left transition shadow">
+                        <div class="font-bold text-blue-400 text-xs">🌧️ 下雨提醒</div>
+                        <div class="text-[10px] text-slate-400">行車平安</div>
+                    </button>
+                    <button onclick="loadTemplate('urgent')" class="bg-slate-800/90 hover:bg-slate-700 p-2.5 rounded-xl border border-slate-700/80 text-left transition shadow">
+                        <div class="font-bold text-amber-400 text-xs">⚠️ 緊急公告</div>
+                        <div class="text-[10px] text-slate-400">施工通知</div>
+                    </button>
+                    <button onclick="loadTemplate('policy')" class="bg-slate-800/90 hover:bg-slate-700 p-2.5 rounded-xl border border-slate-700/80 text-left transition shadow">
+                        <div class="font-bold text-emerald-400 text-xs">🤝 地方會勘</div>
+                        <div class="text-[10px] text-slate-400">爭取建設</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Editor Form -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4.5 space-y-3.5 shadow-xl">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+                    <i class="fa-solid fa-sliders text-blue-500"></i> 圖卡文案與設定
+                </h3>
+
+                <!-- Theme Color Palette -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">圖卡風格配色</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setTheme('blue')" id="theme-blue" class="py-1.5 px-2 rounded-xl border border-blue-500 bg-blue-900/40 text-[11px] font-bold text-center transition">政壇藍</button>
+                        <button type="button" onclick="setTheme('green')" id="theme-green" class="py-1.5 px-2 rounded-xl border border-slate-700 bg-emerald-900/40 text-[11px] font-bold text-center transition">深綠</button>
+                        <button type="button" onclick="setTheme('orange')" id="theme-orange" class="py-1.5 px-2 rounded-xl border border-slate-700 bg-amber-900/40 text-[11px] font-bold text-center transition">活力橘</button>
+                        <button type="button" onclick="setTheme('dark')" id="theme-dark" class="py-1.5 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition">質感黑</button>
+                    </div>
+                </div>
+
+                <!-- Tag -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">上方標籤 (Tag)</label>
+                    <input type="text" id="inputTag" value="【 關心市民 · 隨時守護 】" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500 transition text-white" oninput="updateCard()">
+                </div>
+
+                <!-- Title -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">主標題</label>
+                    <textarea id="inputTitle" rows="2" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none text-white" oninput="updateCard()">雨勢漸大！出門請注意安全，減速慢行</textarea>
+                </div>
+
+                <!-- Subtitle -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">詳細說明</label>
+                    <textarea id="inputSubtitle" rows="2" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500 transition text-white" oninput="updateCard()">氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離。</textarea>
+                </div>
+
+                <!-- Name & Role -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-semibold text-slate-400 uppercase">姓名 / 署名</label>
+                        <input type="text" id="inputName" value="立法委員 辦公室" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition text-white" oninput="updateCard()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-semibold text-slate-400 uppercase">頭銜 / 標語</label>
+                        <input type="text" id="inputTitleRole" value="為您打拼 每一刻" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition text-white" oninput="updateCard()">
+                    </div>
+                </div>
+
+                <!-- Contact -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">服務專線</label>
+                    <input type="text" id="inputContact" value="0800-READY" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500 transition text-white" oninput="updateCard()">
+                </div>
+
+                <!-- Avatar Upload / URL -->
+                <div class="space-y-1.5 pt-2 border-t border-slate-800">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase flex justify-between items-center">
+                        <span>人物頭像照片</span>
+                        <span class="text-[10px] text-blue-400">支援上傳照片</span>
+                    </label>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 px-3 rounded-xl border border-slate-700 text-center cursor-pointer transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i>
+                            <span>選擇圖片上傳</span>
+                            <input type="file" id="inputAvatarFile" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                        </label>
+                        <button onclick="setAvatarSize('small')" id="size-small" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-xl font-bold transition">精巧</button>
+                        <button onclick="setAvatarSize('none')" id="size-none" class="px-3 py-2 bg-slate-800 text-slate-400 text-xs rounded-xl font-bold transition">隱藏</button>
+                    </div>
                 </div>
 
             </div>
 
-            <!-- Download Button -->
-            <button onclick="downloadCard()" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-xl flex items-center justify-center gap-2 transition transform active:scale-95">
-                <i class="fa-solid fa-download"></i> 下載高清圖卡 (PNG)
+        </main>
+
+        <!-- Mobile Bottom Navigation Bar -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-6 py-2.5 flex justify-around items-center z-30">
+            <button onclick="loadTemplate('rain')" class="flex flex-col items-center text-blue-500">
+                <i class="fa-solid fa-palette text-sm"></i>
+                <span class="text-[10px] mt-1 font-semibold">圖卡設計</span>
+            </button>
+            <button onclick="downloadCard()" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-circle-down text-sm"></i>
+                <span class="text-[10px] mt-1 font-semibold">高清匯出</span>
+            </button>
+            <button onclick="showInfoModal()" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-circle-info text-sm"></i>
+                <span class="text-[10px] mt-1 font-semibold">使用指南</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- Custom Modal Popup -->
+    <div id="customModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl">
+            <div id="modalIcon" class="w-14 h-14 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 id="modalTitle" class="font-bold text-white text-base">提示訊息</h3>
+            <p id="modalDesc" class="text-xs text-slate-300 leading-relaxed">內容說明...</p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-3 rounded-xl transition shadow">
+                確定
             </button>
         </div>
-
-    </main>
+    </div>
 
     <script>
         let currentTheme = 'blue';
-        let currentAspect = 'square';
-        let currentAvatarSize = 'small'; // default to small/refined photo
+        let currentAvatarSize = 'small';
 
         const themes = {
             blue: {
@@ -265,7 +278,7 @@
                 glow1: 'bg-blue-600/30',
                 glow2: 'bg-indigo-600/20',
                 roleColor: 'text-blue-300',
-                contactBg: 'bg-black/40 border-blue-500/30 text-blue-400',
+                contactBg: 'bg-black/50 border-blue-500/30 text-blue-400',
                 miniBorder: 'border-blue-400'
             },
             green: {
@@ -278,7 +291,7 @@
                 glow1: 'bg-emerald-600/30',
                 glow2: 'bg-teal-600/20',
                 roleColor: 'text-emerald-300',
-                contactBg: 'bg-black/40 border-emerald-500/30 text-emerald-400',
+                contactBg: 'bg-black/50 border-emerald-500/30 text-emerald-400',
                 miniBorder: 'border-emerald-400'
             },
             orange: {
@@ -291,7 +304,7 @@
                 glow1: 'bg-amber-600/30',
                 glow2: 'bg-orange-600/20',
                 roleColor: 'text-amber-300',
-                contactBg: 'bg-black/40 border-amber-500/30 text-amber-400',
+                contactBg: 'bg-black/50 border-amber-500/30 text-amber-400',
                 miniBorder: 'border-amber-400'
             },
             dark: {
@@ -304,7 +317,7 @@
                 glow1: 'bg-slate-600/20',
                 glow2: 'bg-slate-500/10',
                 roleColor: 'text-slate-300',
-                contactBg: 'bg-black/40 border-slate-500/30 text-slate-300',
+                contactBg: 'bg-black/50 border-slate-500/30 text-slate-300',
                 miniBorder: 'border-slate-500'
             }
         };
@@ -314,99 +327,40 @@
             ['blue', 'green', 'orange', 'dark'].forEach(t => {
                 const btn = document.getElementById(`theme-${t}`);
                 if (t === themeName) {
-                    btn.className = `py-2 px-3 rounded-xl border border-blue-500 bg-${t === 'blue' ? 'blue' : t === 'green' ? 'emerald' : t === 'orange' ? 'amber' : 'slate'}-900/40 text-xs font-bold text-center transition shadow`;
+                    btn.className = `py-1.5 px-2 rounded-xl border border-blue-500 bg-${t === 'blue' ? 'blue' : t === 'green' ? 'emerald' : t === 'orange' ? 'amber' : 'slate'}-900/40 text-[11px] font-bold text-center transition shadow`;
                 } else {
-                    btn.className = 'py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-center transition opacity-70';
+                    btn.className = 'py-1.5 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition opacity-60';
                 }
             });
-            applyThemeToCard();
-        }
 
-        function applyThemeToCard() {
             const card = document.getElementById('captureCard');
             const theme = themes[currentTheme];
-            card.className = `relative w-[480px] bg-gradient-to-br ${theme.from} ${theme.via} ${theme.to} text-white flex flex-col justify-between overflow-hidden shadow-2xl transition-all duration-300 flex-shrink-0 ${currentAspect === 'square' ? 'h-[480px]' : 'h-[853px]'}`;
+            card.className = `relative w-full aspect-square bg-gradient-to-br ${theme.from} ${theme.via} ${theme.to} text-white rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between border border-blue-500/30`;
 
-            document.getElementById('cardTagBadge').className = `${theme.badgeBg} text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg tracking-wider border ${theme.badgeBorder}`;
-            document.getElementById('bgGlow1').className = `absolute -top-20 -right-20 w-80 h-80 ${theme.glow1} rounded-full blur-3xl pointer-events-none transition-colors duration-500`;
-            document.getElementById('bgGlow2').className = `absolute bottom-0 -left-20 w-80 h-80 ${theme.glow2} rounded-full blur-3xl pointer-events-none transition-colors duration-500`;
-            document.getElementById('previewTitleRole').className = `text-[11px] ${theme.roleColor} font-semibold tracking-wider`;
-            document.getElementById('previewContact').className = `text-xs font-black tracking-wider ${theme.contactBg} px-2.5 py-1 rounded-lg border`;
-            document.getElementById('cardAvatarMini').className = `w-12 h-12 rounded-full border-2 ${theme.miniBorder} overflow-hidden shadow-md bg-slate-800 flex-shrink-0`;
-            document.getElementById('bottomStripe').className = `h-2 w-full ${theme.stripe}`;
-        }
-
-        function setAspect(aspect) {
-            currentAspect = aspect;
-            const card = document.getElementById('captureCard');
-            const sqBtn = document.getElementById('aspect-square');
-            const stBtn = document.getElementById('aspect-story');
-
-            if (aspect === 'square') {
-                card.style.height = '480px';
-                sqBtn.className = 'py-2 px-3 rounded-xl border border-blue-500 bg-blue-600/20 text-xs font-bold transition flex items-center justify-center gap-2 shadow';
-                stBtn.className = 'py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold transition flex items-center justify-center gap-2 opacity-70';
-            } else {
-                card.style.height = '853px';
-                stBtn.className = 'py-2 px-3 rounded-xl border border-blue-500 bg-blue-600/20 text-xs font-bold transition flex items-center justify-center gap-2 shadow';
-                sqBtn.className = 'py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold transition flex items-center justify-center gap-2 opacity-70';
-            }
+            document.getElementById('cardTagBadge').className = `${theme.badgeBg} text-white text-[11px] font-bold px-3.5 py-1 rounded-full shadow-md tracking-wider border ${theme.badgeBorder}`;
+            document.getElementById('previewTitleRole').className = `text-[10px] ${theme.roleColor} font-semibold tracking-wider`;
+            document.getElementById('previewContact').className = `text-[11px] font-black tracking-wider ${theme.contactBg} px-2 py-0.5 rounded border`;
+            document.getElementById('cardAvatarMini').className = `w-10 h-10 rounded-full border-2 ${theme.miniBorder} overflow-hidden shadow-md bg-slate-800 flex-shrink-0`;
+            document.getElementById('bottomStripe').className = `h-1.5 w-full ${theme.stripe}`;
         }
 
         function setAvatarSize(size) {
             currentAvatarSize = size;
-            const avatarContainer = document.getElementById('avatarContainer');
+            const container = document.getElementById('avatarContainer');
             const textWrapper = document.getElementById('textContentWrapper');
-            const uploadSection = document.getElementById('avatarUploadSection');
-            
-            ['large', 'small', 'none'].forEach(s => {
-                const btn = document.getElementById(`size-${s}`);
-                if (s === size) {
-                    btn.className = 'py-2 px-2 rounded-xl border border-blue-500 bg-blue-600/20 text-[11px] font-bold text-center transition shadow';
-                } else {
-                    btn.className = 'py-2 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition opacity-70';
-                }
-            });
+            const btnSmall = document.getElementById('size-small');
+            const btnNone = document.getElementById('size-none');
 
-            if (size === 'large') {
-                avatarContainer.className = 'absolute right-0 bottom-0 w-72 h-full pointer-events-none flex items-end justify-end overflow-hidden opacity-95 transition-all duration-300';
-                textWrapper.className = 'max-w-[62%] space-y-3 relative z-25 transition-all duration-300';
-                uploadSection.classList.remove('hidden');
-            } else if (size === 'small') {
-                avatarContainer.className = 'absolute right-2 bottom-0 w-44 h-[75%] pointer-events-none flex items-end justify-end overflow-hidden opacity-80 transition-all duration-300';
-                textWrapper.className = 'max-w-[80%] space-y-3 relative z-25 transition-all duration-300';
-                uploadSection.classList.remove('hidden');
+            if (size === 'small') {
+                container.classList.remove('hidden');
+                btnSmall.className = "px-3 py-2 bg-blue-600 text-white text-xs rounded-xl font-bold transition";
+                btnNone.className = "px-3 py-2 bg-slate-800 text-slate-400 text-xs rounded-xl font-bold transition";
+                textWrapper.className = "max-w-[70%] space-y-2 relative z-20";
             } else {
-                avatarContainer.className = 'hidden';
-                textWrapper.className = 'max-w-[92%] space-y-3 relative z-25 transition-all duration-300';
-                uploadSection.classList.add('hidden');
-            }
-        }
-
-        function switchImageTab(mode) {
-            const urlBtn = document.getElementById('tabUrlBtn');
-            const fileBtn = document.getElementById('tabFileBtn');
-            const urlContainer = document.getElementById('imageUrlContainer');
-            const fileContainer = document.getElementById('imageFileContainer');
-
-            if (mode === 'url') {
-                urlBtn.className = 'py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow';
-                fileBtn.className = 'py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-                urlContainer.classList.remove('hidden');
-                fileContainer.classList.add('hidden');
-            } else {
-                fileBtn.className = 'py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow';
-                urlBtn.className = 'py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-                fileContainer.classList.remove('hidden');
-                urlContainer.classList.add('hidden');
-            }
-        }
-
-        function updateAvatarFromUrl() {
-            const url = document.getElementById('inputAvatarUrl').value;
-            if (url) {
-                document.getElementById('previewAvatarImg').src = url;
-                document.getElementById('previewAvatarMiniImg').src = url;
+                container.classList.add('hidden');
+                btnNone.className = "px-3 py-2 bg-blue-600 text-white text-xs rounded-xl font-bold transition";
+                btnSmall.className = "px-3 py-2 bg-slate-800 text-slate-400 text-xs rounded-xl font-bold transition";
+                textWrapper.className = "max-w-[92%] space-y-2 relative z-20";
             }
         }
 
@@ -415,9 +369,8 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const base64 = e.target.result;
-                    document.getElementById('previewAvatarImg').src = base64;
-                    document.getElementById('previewAvatarMiniImg').src = base64;
+                    document.getElementById('previewAvatarImg').src = e.target.result;
+                    document.getElementById('previewAvatarMiniImg').src = e.target.result;
                 }
                 reader.readAsDataURL(file);
             }
@@ -430,13 +383,6 @@
             document.getElementById('previewName').innerText = document.getElementById('inputName').value;
             document.getElementById('previewTitleRole').innerText = document.getElementById('inputTitleRole').value;
             document.getElementById('previewContact').innerText = document.getElementById('inputContact').value;
-
-            const stripe = document.getElementById('bottomStripe');
-            if (document.getElementById('toggleStripe').checked) {
-                stripe.classList.remove('hidden');
-            } else {
-                stripe.classList.add('hidden');
-            }
         }
 
         function loadTemplate(type) {
@@ -444,39 +390,120 @@
                 setTheme('blue');
                 document.getElementById('inputTag').value = '【 關心市民 · 隨時守護 】';
                 document.getElementById('inputTitle').value = '雨勢漸大！出門請注意安全，減速慢行';
-                document.getElementById('inputSubtitle').value = '氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離，平安就是給家人最好的承諾。';
+                document.getElementById('inputSubtitle').value = '氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離。';
                 document.getElementById('inputTitleRole').value = '為您打拼 每一刻';
             } else if (type === 'urgent') {
                 setTheme('orange');
                 document.getElementById('inputTag').value = '【 ⚠️ 緊急公告 · 立刻注意 】';
                 document.getElementById('inputTitle').value = '選區道路路平改善工程施工通知';
-                document.getElementById('inputSubtitle').value = '因應管線老舊更新，本周三起進行封路刨鋪作業，請用路人提前改道行駛，造成不便敬請見諒。';
+                document.getElementById('inputSubtitle').value = '因應管線老舊更新，本周三起進行道路刨鋪作業，請用路人提前改道。';
                 document.getElementById('inputTitleRole').value = '為民喉舌 嚴格監督';
             } else if (type === 'policy') {
                 setTheme('green');
                 document.getElementById('inputTag').value = '【 地方會勘 · 爭取建設 】';
-                document.getElementById('inputTitle').value = '成功爭取經費！全方位升級人行道與照明';
-                document.getElementById('inputSubtitle').value = '實地走訪基層，邀集市府局處會勘，為鄉親解決長年燈光昏暗與通行安全問題，讓生活更有品質。';
+                document.getElementById('inputTitle').value = '成功爭取經費！全方位升級人行道照明';
+                document.getElementById('inputSubtitle').value = '實地走訪基層，邀集市府局處會勘，為鄉親解決長年燈光昏暗與通行安全問題。';
                 document.getElementById('inputTitleRole').value = '專業問政 行動實踐';
             }
             updateCard();
         }
 
+        // Fetch live info with Google Search Grounding for CWA & Taipei City Government
+        async function fetchLatestInfo(sourceType) {
+            const statusEl = document.getElementById('aiStatus');
+            statusEl.classList.remove('hidden');
+            statusEl.innerText = sourceType === 'weather' ? '正在連線中央氣象署取得最新天氣資訊...' : '正在連線台北市政府取得最新市政動態...';
+
+            let userQuery = sourceType === 'weather' 
+                ? '請透過google search查詢中央氣象署目前最新的天氣概況、豪大雨特報或氣溫變化，並提供一個適合政治人物/民意代表發文提醒市民的社群圖卡內容，包含：1. 標籤(tag) 2. 主標題 3. 詳細說明。請用JSON格式回傳：{"tag": "...", "title": "...", "subtitle": "..."}'
+                : '請透過google search查詢台北市政府近期最新的重大政策、福利措施或市政公告，並提供一個適合政治人物/民意代表向市民報告的社群圖卡內容，包含：1. 標籤(tag) 2. 主標題 3. 詳細說明。請用JSON格式回傳：{"tag": "...", "title": "...", "subtitle": "..."}';
+
+            const systemPrompt = "你是一個專業的公關與社群文案大師，請協助整理最即時準確的官方資訊並轉化為溫暖、專業且具號召力的社群圖卡文字。絕對不能出現「候選人」三個字。";
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            tag: { type: "STRING" },
+                            title: { type: "STRING" },
+                            subtitle: { type: "STRING" }
+                        },
+                        propertyOrdering: ["tag", "title", "subtitle"]
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const data = JSON.parse(candidate.content.parts[0].text);
+                    if (data.tag) document.getElementById('inputTag').value = data.tag;
+                    if (data.title) document.getElementById('inputTitle').value = data.title;
+                    if (data.subtitle) document.getElementById('inputSubtitle').value = data.subtitle;
+                    updateCard();
+                    statusEl.innerText = '✨ 已成功帶入最新即時資訊！';
+                    setTimeout(() => { statusEl.classList.add('hidden'); }, 4000);
+                } else {
+                    throw new Error('Invalid response structure');
+                }
+            } catch (error) {
+                console.error(error);
+                statusEl.innerText = '連線取得資訊時發生錯誤，請稍後再試。';
+                setTimeout(() => { statusEl.classList.add('hidden'); }, 4000);
+            }
+        }
+
         function downloadCard() {
             const cardElement = document.getElementById('captureCard');
+            showModal('處理中', '正在為您合成高清社群圖卡...', 'fa-spinner fa-spin text-blue-400');
+
+            // Force fixed width & height scaling for clean export without distortion or misalignment
             html2canvas(cardElement, {
                 scale: 3,
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: null
+                backgroundColor: null,
+                width: cardElement.offsetWidth,
+                height: cardElement.offsetHeight,
+                windowWidth: document.documentElement.clientWidth
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `政治人物宣傳圖卡_${Date.now()}.png`;
+                link.download = `政務圖卡_${Date.now()}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+                showModal('下載成功', '高畫質圖卡已成功儲存至您的手機裝置！');
             }).catch(err => {
-                console.error("匯出圖片失敗：", err);
+                console.error(err);
+                showModal('匯出失敗', '圖片匯出時發生錯誤，請檢查照片權限。', 'fa-triangle-exclamation text-red-400');
             });
+        }
+
+        function showInfoModal() {
+            showModal('使用指南', '1. 點擊「中央氣象署」或「台北市政府」一鍵帶入最新官方資訊。<br>2. 調整上方標籤、主標題與頭像。<br>3. 點擊「匯出」將 1080x1080 高畫質圖卡存入相簿！');
+        }
+
+        function showModal(title, desc, iconClass = 'fa-solid fa-check') {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalDesc').innerHTML = desc;
+            document.getElementById('modalIcon').innerHTML = `<i class="${iconClass}"></i>`;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
         }
     </script>
 </body>
