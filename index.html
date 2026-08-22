@@ -249,14 +249,25 @@
 
     </div>
 
-    <!-- Custom Modal Popup -->
-    <div id="customModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl">
+    <!-- Custom Modal Popup with Mobile Image Viewer / Save Support -->
+    <div id="customModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
             <div id="modalIcon" class="w-14 h-14 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto text-2xl">
                 <i class="fa-solid fa-check"></i>
             </div>
             <h3 id="modalTitle" class="font-bold text-white text-base">提示訊息</h3>
-            <p id="modalDesc" class="text-xs text-slate-300 leading-relaxed">內容說明...</p>
+            <div id="modalDescContainer">
+                <p id="modalDesc" class="text-xs text-slate-300 leading-relaxed">內容說明...</p>
+            </div>
+            
+            <!-- Mobile Image Preview Container for direct long-press / save -->
+            <div id="modalImageContainer" class="hidden space-y-2">
+                <div class="text-[11px] text-amber-400 font-bold bg-amber-950/50 p-2 rounded-xl border border-amber-500/30">
+                    💡 手機版提示：若下載無反應，請<span class="underline">長按下方圖片</span>並點選「加入照片」或「下載圖片」即可存入相簿！
+                </div>
+                <img id="modalResultImg" src="" class="w-full rounded-xl border border-slate-700 shadow-md max-h-60 object-contain mx-auto">
+            </div>
+
             <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-3 rounded-xl transition shadow">
                 確定
             </button>
@@ -468,9 +479,8 @@
 
         function downloadCard() {
             const cardElement = document.getElementById('captureCard');
-            showModal('處理中', '正在為您合成高清社群圖卡...', 'fa-spinner fa-spin text-blue-400');
+            showModal('處理中', '正在為您合成高清社群圖卡...', 'fa-spinner fa-spin text-blue-400', false);
 
-            // Force fixed width & height scaling for clean export without distortion or misalignment
             html2canvas(cardElement, {
                 scale: 3,
                 useCORS: true,
@@ -480,25 +490,47 @@
                 height: cardElement.offsetHeight,
                 windowWidth: document.documentElement.clientWidth
             }).then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Try standard programmatic download first
                 const link = document.createElement('a');
                 link.download = `政務圖卡_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showModal('下載成功', '高畫質圖卡已成功儲存至您的手機裝置！');
+                link.href = dataUrl;
+                
+                // Check if running in mobile webview where anchor downloads might be blocked
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // Show modal with the generated image so the user can long-press and save directly
+                    document.getElementById('modalResultImg').src = dataUrl;
+                    document.getElementById('modalImageContainer').classList.remove('hidden');
+                    showModal('圖卡製作完成！', '高畫質圖卡已成功生成。', 'fa-circle-check text-emerald-400', true);
+                } else {
+                    link.click();
+                    showModal('下載成功', '高畫質圖卡已成功儲存至您的裝置！', 'fa-circle-check text-emerald-400', false);
+                }
             }).catch(err => {
                 console.error(err);
-                showModal('匯出失敗', '圖片匯出時發生錯誤，請檢查照片權限。', 'fa-triangle-exclamation text-red-400');
+                showModal('匯出失敗', '圖片匯出時發生錯誤，請檢查照片權限或重新上傳。', 'fa-triangle-exclamation text-red-400', false);
             });
         }
 
         function showInfoModal() {
-            showModal('使用指南', '1. 點擊「中央氣象署」或「台北市政府」一鍵帶入最新官方資訊。<br>2. 調整上方標籤、主標題與頭像。<br>3. 點擊「匯出」將 1080x1080 高畫質圖卡存入相簿！');
+            showModal('使用指南', '1. 點擊「中央氣象署」或「台北市政府」一鍵帶入最新官方資訊。<br>2. 調整上方標籤、主標題與頭像。<br>3. 點擊「匯出」將 1080x1080 高畫質圖卡存入相簿！', 'fa-circle-info text-blue-400', false);
         }
 
-        function showModal(title, desc, iconClass = 'fa-solid fa-check') {
+        function showModal(title, desc, iconClass = 'fa-solid fa-check', showImage = false) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalDesc').innerHTML = desc;
             document.getElementById('modalIcon').innerHTML = `<i class="${iconClass}"></i>`;
+            
+            const imgContainer = document.getElementById('modalImageContainer');
+            if (showImage) {
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+            
             document.getElementById('customModal').classList.remove('hidden');
         }
 
