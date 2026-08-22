@@ -2,539 +2,482 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>智慧車輛進廠管理系統 - Lexus 服務廠版</title>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>政治人物社群圖卡產生器 Pro</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas to export the card as an image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root {
-            --primary-blue: #1d4ed8;
-            --header-bg: linear-gradient(135deg, #1e40af, #2563eb);
-            --bg-color: #f8fafc;
-            --border-color: #e2e8f0;
-            --green-btn: #059669;
-            --danger-color: #ef4444;
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: #0f172a; padding-bottom: 70px; max-width: 500px; margin: auto; }
-
-        /* 頂部 Header */
-        .top-header { background: var(--header-bg); padding: 16px; border-radius: 0 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
-        .header-main { display: flex; justify-content: space-between; align-items: center; }
-        .user-info { font-size: 16px; font-weight: bold; line-height: 1.3; }
-        .user-sub { font-size: 11px; opacity: 0.85; font-weight: normal; }
-
-        .btn-add-record { background: #ffffff; color: var(--primary-blue); border: none; border-radius: 8px; padding: 10px 14px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
-        /* 公告跑馬燈 (時間設定為 22s，確保速度穩定不暴衝) */
-        .marquee-box { background: rgba(0, 0, 0, 0.2); margin-top: 12px; padding: 6px 10px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; }
-        .marquee-tag { background: #f59e0b; color: white; font-weight: bold; padding: 1px 6px; border-radius: 4px; font-size: 10px; flex-shrink: 0; }
-        .marquee-container { overflow: hidden; width: 100%; position: relative; }
-        .marquee-text { display: inline-block; animation: marquee 22s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-
-        /* 內容區 */
-        .content { padding: 16px; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-        .stat-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid var(--border-color); }
-        .stat-title { font-size: 13px; color: #64748b; font-weight: bold; }
-        .stat-value { font-size: 28px; font-weight: 800; margin-top: 6px; }
-
-        .record-card { background: white; border-radius: 12px; padding: 14px; border: 1px solid var(--border-color); margin-bottom: 10px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .record-header { display: flex; justify-content: space-between; align-items: center; }
-        .record-plate { font-size: 20px; font-weight: bold; color: var(--primary-blue); letter-spacing: 1px; }
-        .record-photo { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 6px; }
-
-        /* 底部導航 */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; max-width: 500px; margin: auto; z-index: 100; }
-        .nav-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-        .nav-btn.active { color: var(--primary-blue); }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 16px 8px; z-index: 1000; }
-        .modal-card { background: white; width: 100%; max-width: 480px; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 60px; }
-
-        .form-group { display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        label { font-size: 13px; font-weight: bold; color: #334155; }
-        input, textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
-        .plate-input { font-size: 24px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; text-align: center; color: var(--primary-blue); border: 2px solid var(--primary-blue); background: white; }
-
-        .car-topview-box { text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px dashed var(--primary-blue); }
-        canvas { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; touch-action: manipulation; }
-        
-        .damage-btn-group { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
-        .damage-btn-group button { padding: 8px 14px; font-size: 13px; border-radius: 6px; border: 1px solid var(--border-color); background: white; cursor: pointer; font-weight: bold;}
-        .damage-btn-group button.active-scratch { background: var(--danger-color); color: white; border-color: var(--danger-color); }
-        .damage-btn-group button.active-dent { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
-
-        .photo-upload-btn { background: white; border: 1px dashed #94a3b8; color: #475569; padding: 10px; border-radius: 8px; font-size: 13px; cursor: pointer; text-align: center; font-weight: bold; margin-top: 4px; }
-        .photo-preview-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-        .thumb-box { position: relative; width: 65px; height: 65px; border-radius: 6px; border: 1px solid #cbd5e1; overflow: hidden; }
-        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-        .thumb-remove { position: absolute; top: 0; right: 0; background: rgba(239, 68, 68, 0.9); color: white; border: none; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .btn-action { background: var(--primary-blue); color: white; border: none; border-radius: 8px; padding: 12px; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; margin-top: 8px;}
+        .card-shadow {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
 
-<div class="top-header">
-    <div class="header-main">
-        <div>
-            <div class="user-info">智慧車輛進廠管理系統</div>
-            <div class="user-sub">Lexus 服務廠接待專用</div>
-        </div>
-        <button class="btn-add-record" onclick="openFormModal()">+ 新增接待</button>
-    </div>
-    <div class="marquee-box">
-        <span class="marquee-tag">公告</span>
-        <div class="marquee-container">
-            <span class="marquee-text" id="marquee-content">歡迎使用智慧車輛進廠系統，目前尚無最新進廠車輛資訊。</span>
-        </div>
-    </div>
-</div>
-
-<div class="content">
-    <div id="tab-overview" class="tab-content active">
-        <h3 style="font-size: 16px; margin-bottom: 8px;">今日接車概況</h3>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title">今日總接車</div>
-                <div class="stat-value" style="color: #2563eb;" id="stat-total">0</div>
+    <header class="bg-slate-800 border-b border-slate-700 py-4 px-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg">
+                    <i class="fa-solid fa-bullhorn text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">政壇風社群圖卡產生器 Pro</h1>
+                    <p class="text-xs text-slate-400">一秒製作吸睛、專業、有氣勢的政策與關懷圖卡</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">需洗車服務</div>
-                <div class="stat-value" style="color: #059669;" id="stat-wash">0</div>
+            <div class="flex items-center space-x-2 flex-wrap gap-2">
+                <button onclick="loadTemplate('rain')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud-rain text-blue-400"></i> 下雨天提醒
+                </button>
+                <button onclick="loadTemplate('urgent')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> 緊急公告
+                </button>
+                <button onclick="loadTemplate('policy')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-handshake-angle text-emerald-400"></i> 地方會勘
+                </button>
             </div>
         </div>
-        <div style="background: white; border-radius: 12px; padding: 14px; border: 1px solid var(--border-color); margin-top: 12px;">
-            <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ 系統運作狀態</div>
-            <div style="font-size: 12px; color: #64748b;" id="sync-status-text">📡 正在連線至 Firebase 資料庫...</div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Controls Column -->
+        <div class="lg:col-span-5 bg-slate-800/80 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-3 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-blue-500"></i> 圖卡內容與風格設定
+            </h2>
+
+            <!-- Theme / Color Palette Selection -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">圖卡風格主題配色</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="setTheme('blue')" id="theme-blue" class="py-2 px-3 rounded-xl border border-blue-500 bg-blue-900/40 text-xs font-bold text-center transition">政壇藍</button>
+                    <button type="button" onclick="setTheme('green')" id="theme-green" class="py-2 px-3 rounded-xl border border-slate-700 bg-emerald-900/40 text-xs font-bold text-center transition">深綠政風</button>
+                    <button type="button" onclick="setTheme('orange')" id="theme-orange" class="py-2 px-3 rounded-xl border border-slate-700 bg-amber-900/40 text-xs font-bold text-center transition">活力橘</button>
+                    <button type="button" onclick="setTheme('dark')" id="theme-dark" class="py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-center transition">質感黑</button>
+                </div>
+            </div>
+
+            <!-- Aspect Ratio Selection -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">圖卡尺寸比例</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="setAspect('square')" id="aspect-square" class="py-2 px-3 rounded-xl border border-blue-500 bg-blue-600/20 text-xs font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-square"></i> 正方形 (1:1 貼文)
+                    </button>
+                    <button type="button" onclick="setAspect('story')" id="aspect-story" class="py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-mobile-screen"></i> 限動直式 (9:16)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Avatar Size Control -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">照片大小與顯示模式</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setAvatarSize('large')" id="size-large" class="py-2 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition">大半身照</button>
+                    <button type="button" onclick="setAvatarSize('small')" id="size-small" class="py-2 px-2 rounded-xl border border-blue-500 bg-blue-600/20 text-[11px] font-bold text-center transition">精巧照片</button>
+                    <button type="button" onclick="setAvatarSize('none')" id="size-none" class="py-2 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition">不放照片</button>
+                </div>
+            </div>
+
+            <!-- Tag / Category -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">上方標籤 (Tag)</label>
+                <input type="text" id="inputTag" value="【 關心市民 · 隨時守護 】" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
+            </div>
+
+            <!-- Main Title -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">主標題 (大字)</label>
+                <textarea id="inputTitle" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition resize-none" oninput="updateCard()">雨勢漸大！出門請注意安全，減速慢行</textarea>
+            </div>
+
+            <!-- Subtitle / Body -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">詳細說明文字</label>
+                <textarea id="inputSubtitle" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離，平安就是給家人最好的承諾。</textarea>
+            </div>
+
+            <!-- Politician Info -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">姓名 / 署名</label>
+                    <input type="text" id="inputName" value="立法委員 參選人" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">頭銜 / 標語</label>
+                    <input type="text" id="inputTitleRole" value="為您打拼 每一刻" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
+                </div>
+            </div>
+
+            <!-- Contact / Phone info -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">右下角服務專線 / 選區備註</label>
+                <input type="text" id="inputContact" value="0800-READY" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateCard()">
+            </div>
+
+            <!-- Avatar Image Source Selector & Upload -->
+            <div id="avatarUploadSection" class="space-y-3">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                    <span>政治人物半身照</span>
+                    <span class="text-[10px] text-blue-400">支援上傳圖片或貼網址</span>
+                </label>
+                
+                <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-700">
+                    <button type="button" id="tabUrlBtn" onclick="switchImageTab('url')" class="py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow">圖片網址</button>
+                    <button type="button" id="tabFileBtn" onclick="switchImageTab('file')" class="py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">上傳檔案</button>
+                </div>
+
+                <div id="imageUrlContainer" class="space-y-2">
+                    <input type="text" id="inputAvatarUrl" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition" oninput="updateAvatarFromUrl()" placeholder="輸入圖片網址...">
+                </div>
+
+                <div id="imageFileContainer" class="space-y-2 hidden">
+                    <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer bg-slate-900 hover:bg-slate-700/50 transition">
+                        <div class="flex flex-col items-center justify-center pt-3 pb-3">
+                            <i class="fa-solid fa-cloud-arrow-up text-blue-400 text-xl mb-1"></i>
+                            <p class="text-xs text-slate-400"><span class="font-semibold text-blue-400">點擊上傳照片</span> 或拖曳至此</p>
+                            <p class="text-[10px] text-slate-500">PNG, JPG</p>
+                        </div>
+                        <input type="file" id="inputAvatarFile" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Watermark Toggle -->
+            <div class="flex items-center justify-between pt-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">顯示底部裝飾條紋</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggleStripe" checked class="sr-only peer" onchange="updateCard()">
+                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
         </div>
-    </div>
 
-    <div id="tab-records" class="tab-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="font-size: 16px;">接待記錄清單</h3>
-            <span style="font-size: 12px; color:#64748b;" id="record-count-text">共 0 筆</span>
-        </div>
-        <div id="records-container">
-            <p style="text-align: center; color: #94a3b8; padding: 40px 0;">載入中...</p>
-        </div>
-    </div>
-</div>
-
-<div class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTab('overview', this)"><span style="font-size: 18px;">📊</span> 概況</button>
-    <button class="nav-btn" onclick="switchTab('records', this)"><span style="font-size: 18px;">📋</span> 紀錄</button>
-</div>
-
-<input type="file" id="input-main-photo" accept="image/*" style="display:none;" onchange="handleMainPhoto(event)">
-<input type="file" id="input-damage-photos" accept="image/*" multiple style="display:none;" onchange="handleExtraPhotos(event, 'damage')">
-<input type="file" id="input-issue-photos" accept="image/*" multiple style="display:none;" onchange="handleExtraPhotos(event, 'issue')">
-
-<!-- Modal -->
-<div class="modal-overlay" id="form-modal">
-    <div class="modal-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <h3 style="font-size: 18px;">📝 新增接待紀錄</h3>
-            <button style="border:none; background:none; font-size:24px; color: #64748b; cursor:pointer;" onclick="closeModal('form-modal')">✕</button>
-        </div>
-
-        <div class="form-group">
-            <label>🚗 車牌號碼 (必填)</label>
-            <input type="text" id="field-plate" class="plate-input" placeholder="例: ABC-1234">
+        <!-- Preview & Export Column -->
+        <div class="lg:col-span-7 flex flex-col items-center sticky top-6 space-y-4">
             
-            <button class="photo-upload-btn" style="background:#e0e7ff; color:#3730a3; border-color:#c7d2fe;" onclick="document.getElementById('input-main-photo').click()">
-                📷 拍攝/選擇車頭照片
-            </button>
-            <div id="main-photo-preview-box" style="display:none; margin-top: 6px;">
-                <img id="main-photo-img" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; border:1px solid #cbd5e1;">
+            <div class="w-full flex justify-between items-center px-2">
+                <span class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-eye text-emerald-400"></i> 即時視覺預覽
+                </span>
+                <span class="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                    支援高清社群匯出
+                </span>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label>🛠️ 車損點位標記</label>
-            <div class="car-topview-box">
-                <span style="font-size: 11px; color:#64748b;">(點擊車身即可標記受損點)</span><br>
-                <canvas id="carCanvas" width="280" height="240" style="margin-top: 6px;"></canvas>
-                <div class="damage-btn-group">
-                    <button id="btn-dmg-scratch" class="active-scratch" onclick="setDamageType('刮傷', this)">🔴 刮傷</button>
-                    <button id="btn-dmg-dent" onclick="setDamageType('凹痕', this)">🔵 凹痕</button>
-                    <button onclick="clearDamage()">↺ 清除標記</button>
-                </div>
-            </div>
-            <button class="photo-upload-btn" onclick="document.getElementById('input-damage-photos').click()">+ 新增車損細節照片</button>
-            <div class="photo-preview-grid" id="grid-damage-photos"></div>
-        </div>
+            <!-- Card Render Area Wrapper -->
+            <div class="w-full overflow-x-auto flex justify-center p-2 bg-slate-950/60 rounded-2xl border border-slate-800 shadow-2xl">
+                
+                <!-- The actual Exportable Card Container -->
+                <div id="captureCard" class="relative w-[480px] h-[480px] bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white flex flex-col justify-between overflow-hidden shadow-2xl transition-all duration-300 flex-shrink-0" style="aspect-ratio: 1/1;">
+                    
+                    <!-- Dynamic Background Accents / Glows -->
+                    <div id="bgGlow1" class="absolute -top-20 -right-20 w-80 h-80 bg-blue-600/30 rounded-full blur-3xl pointer-events-none transition-colors duration-500"></div>
+                    <div id="bgGlow2" class="absolute bottom-0 -left-20 w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none transition-colors duration-500"></div>
 
-        <div class="form-group">
-            <div style="display: flex; gap: 8px;">
-                <div style="flex: 1;">
-                    <label>洗車服務</label>
-                    <select id="field-wash"><option value="否">否</option><option value="是">是</option></select>
-                </div>
-                <div style="flex: 1;">
-                    <label>里程數 (km)</label>
-                    <input type="number" id="field-mileage" placeholder="例: 45000">
-                </div>
-            </div>
-            
-            <label style="margin-top: 8px;">備註 / 車主交代事項</label>
-            <textarea id="field-notes" rows="2" placeholder="請填寫事項..."></textarea>
-            
-            <button class="photo-upload-btn" onclick="document.getElementById('input-issue-photos').click()">+ 新增其他問題照片</button>
-            <div class="photo-preview-grid" id="grid-issue-photos"></div>
-        </div>
-
-        <button class="btn-action" onclick="saveRecord()">☁️ 儲存接待紀錄</button>
-    </div>
-</div>
-
-<!-- 詳細 Modal -->
-<div class="modal-overlay" id="detail-modal">
-    <div class="modal-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <h3 style="font-size: 18px;">📋 接待紀錄詳情</h3>
-            <button style="border:none; background:none; font-size:24px; color: #64748b; cursor:pointer;" onclick="closeModal('detail-modal')">✕</button>
-        </div>
-        <div id="detail-content" style="display: flex; flex-direction: column; gap: 12px;"></div>
-        <button class="photo-upload-btn" style="background: #fee2e2; color: #991b1b; border-color: #fca5a5; margin-top: 10px;" id="btn-delete-record">🗑️ 刪除此筆紀錄</button>
-    </div>
-</div>
-
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDOtniuCerLb8GDZVxc2DtNE3v_V0p_7O0",
-        authDomain: "garage-system-1f70c.firebaseapp.com",
-        databaseURL: "https://garage-system-1f70c-default-rtdb.firebaseio.com",
-        projectId: "garage-system-1f70c",
-        storageBucket: "garage-system-1f70c.firebasestorage.app",
-        messagingSenderId: "821307567379",
-        appId: "1:821307567379:web:8bf806c24f0ed59bc1bee6"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("garage_records");
-
-    let recordsList = [];
-    let state = { mainPhoto: "", damagePhotos: [], issuePhotos: [], damagePoints: [], currentDamageType: '刮傷' };
-
-    db.on('value', (snapshot) => {
-        const data = snapshot.val();
-        recordsList = [];
-        if (data) Object.keys(data).forEach(key => recordsList.unshift({ id: key, ...data[key] }));
-        updateOverviewStats();
-        renderRecords();
-        updateMarquee();
-        document.getElementById('sync-status-text').innerText = "⚡ Firebase 雲端即時連線成功！";
-    });
-
-    /* 固定跑馬燈長度，防止車多速度變快 */
-    function updateMarquee() {
-        const marqueeEl = document.getElementById('marquee-content');
-        if (recordsList.length === 0) {
-            marqueeEl.innerText = "歡迎使用智慧車輛進廠系統，目前尚無最新進廠車輛資訊。";
-            return;
-        }
-        
-        // 只拿最新 3 筆，確保長度與移動速度一致
-        const recentRecords = recordsList.slice(0, 3);
-        const textList = recentRecords.map(r => `🚗 車牌 [${r.plate}] 已進廠 (${r.time})`);
-        marqueeEl.innerText = "📢 最新進廠：" + textList.join(" ｜ ");
-    }
-
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.add('active');
-        btn.classList.add('active');
-    }
-
-    function openFormModal() {
-        state = { mainPhoto: "", damagePhotos: [], issuePhotos: [], damagePoints: [], currentDamageType: '刮傷' };
-        document.getElementById('field-plate').value = "";
-        document.getElementById('field-wash').value = "否";
-        document.getElementById('field-mileage').value = "";
-        document.getElementById('field-notes').value = "";
-        document.getElementById('main-photo-preview-box').style.display = 'none';
-        renderThumbnails('damage');
-        renderThumbnails('issue');
-        
-        document.getElementById('form-modal').style.display = 'flex';
-        
-        // 確保 Modal 動畫完成後再渲染繪圖板
-        setTimeout(() => {
-            initCarCanvas();
-        }, 150);
-    }
-
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-    async function handleMainPhoto(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const base64 = await resizeNormalImage(file, 800, 0.7);
-        state.mainPhoto = base64;
-        
-        const previewBox = document.getElementById('main-photo-preview-box');
-        const previewImg = document.getElementById('main-photo-img');
-        previewImg.src = base64;
-        previewBox.style.display = 'block';
-    }
-
-    async function handleExtraPhotos(e, type) {
-        const files = e.target.files;
-        if (!files) return;
-        const arr = type === 'damage' ? state.damagePhotos : state.issuePhotos;
-        for(let i=0; i<files.length; i++) {
-            const base64 = await resizeNormalImage(files[i], 600, 0.6); 
-            arr.push(base64);
-        }
-        renderThumbnails(type);
-    }
-
-    function renderThumbnails(type) {
-        const arr = type === 'damage' ? state.damagePhotos : state.issuePhotos;
-        const grid = document.getElementById(`grid-${type}-photos`);
-        grid.innerHTML = "";
-        arr.forEach((base64, index) => {
-            const div = document.createElement('div');
-            div.className = 'thumb-box';
-            div.innerHTML = `<img src="${base64}"><button class="thumb-remove" onclick="removePhoto('${type}', ${index})">✕</button>`;
-            grid.appendChild(div);
-        });
-    }
-
-    function removePhoto(type, index) {
-        const arr = type === 'damage' ? state.damagePhotos : state.issuePhotos;
-        arr.splice(index, 1);
-        renderThumbnails(type);
-    }
-
-    function resizeNormalImage(file, maxSide, quality) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if(w > maxSide || h > maxSide) {
-                        if(w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
-                        else { w = Math.round(w * maxSide / h); h = maxSide; }
-                    }
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    /* 🚗 車損 Canvas 點擊與繪製核心 */
-    let carCanvas, carCtx;
-
-    function initCarCanvas() {
-        carCanvas = document.getElementById('carCanvas');
-        if(!carCanvas) return;
-        carCtx = carCanvas.getContext('2d');
-
-        carCanvas.onclick = handleCanvasClick;
-        drawCarTopView();
-    }
-
-    function handleCanvasClick(e) {
-        const rect = carCanvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        let part = "車身";
-        if (y < 40) part = "車頭"; 
-        else if (y > 200) part = "車尾"; 
-        else if (x < 100) part = "左側"; 
-        else if (x > 180) part = "右側";
-
-        state.damagePoints.push({ x, y, part: part, type: state.currentDamageType });
-        drawCarTopView();
-    }
-
-    function drawCarTopView() {
-        if (!carCtx) return;
-        carCtx.clearRect(0, 0, carCanvas.width, carCanvas.height);
-        
-        // 輪胎
-        carCtx.fillStyle = "#1e293b";
-        carCtx.fillRect(60, 45, 18, 35); 
-        carCtx.fillRect(202, 45, 18, 35);
-        carCtx.fillRect(60, 160, 18, 35); 
-        carCtx.fillRect(202, 160, 18, 35);
-
-        // 車身底圖
-        carCtx.fillStyle = "#ffffff"; 
-        carCtx.strokeStyle = "#334155"; 
-        carCtx.lineWidth = 2;
-        carCtx.beginPath(); 
-        carCtx.roundRect(80, 20, 120, 200, 25); 
-        carCtx.fill(); 
-        carCtx.stroke();
-        
-        // 前後玻璃
-        carCtx.fillStyle = "#cbd5e1";
-        carCtx.beginPath(); carCtx.moveTo(90, 85); carCtx.lineTo(190, 85); carCtx.lineTo(180, 115); carCtx.lineTo(100, 115); carCtx.closePath(); carCtx.fill(); carCtx.stroke();
-        carCtx.beginPath(); carCtx.moveTo(100, 165); carCtx.lineTo(180, 165); carCtx.lineTo(190, 190); carCtx.lineTo(90, 190); carCtx.closePath(); carCtx.fill(); carCtx.stroke();
-        
-        carCtx.fillStyle = "#64748b"; 
-        carCtx.font = "bold 11px sans-serif";
-        carCtx.fillText("▲ 車頭 FRONT", 102, 12);
-
-        // 標記紅藍點
-        state.damagePoints.forEach((pt, idx) => {
-            carCtx.beginPath(); 
-            carCtx.arc(pt.x, pt.y, 9, 0, Math.PI * 2);
-            carCtx.fillStyle = pt.type === '刮傷' ? '#ef4444' : '#2563eb';
-            carCtx.fill(); 
-            carCtx.strokeStyle = '#ffffff'; 
-            carCtx.lineWidth = 2; 
-            carCtx.stroke();
-
-            carCtx.fillStyle = '#ffffff'; 
-            carCtx.font = 'bold 10px sans-serif';
-            carCtx.textAlign = 'center';
-            carCtx.textBaseline = 'middle';
-            carCtx.fillText(idx + 1, pt.x, pt.y);
-        });
-    }
-
-    function setDamageType(type, btn) {
-        state.currentDamageType = type;
-        document.querySelectorAll('.damage-btn-group button').forEach(b => {
-            b.classList.remove('active-scratch', 'active-dent');
-        });
-        if (type === '刮傷') btn.classList.add('active-scratch');
-        else btn.classList.add('active-dent');
-    }
-
-    function clearDamage() { 
-        state.damagePoints = []; 
-        drawCarTopView(); 
-    }
-
-    function saveRecord() {
-        const plateInput = document.getElementById('field-plate').value.trim();
-        if (!plateInput) { 
-            alert('請填寫車牌號碼！'); 
-            document.getElementById('field-plate').focus();
-            return; 
-        }
-
-        let damageText = state.damagePoints.length > 0 
-            ? state.damagePoints.map(p => `${p.part}(${p.type})`).join(', ') 
-            : '無標記';
-
-        const record = {
-            plate: plateInput.toUpperCase(),
-            mainPhoto: state.mainPhoto,
-            wash: document.getElementById('field-wash').value,
-            mileage: document.getElementById('field-mileage').value || '未填',
-            notes: document.getElementById('field-notes').value || '無',
-            damageText: damageText,
-            damagePhotos: state.damagePhotos,
-            issuePhotos: state.issuePhotos,
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-            date: new Date().toLocaleDateString('zh-TW')
-        };
-
-        db.push(record);
-        closeModal('form-modal');
-    }
-
-    function updateOverviewStats() {
-        const today = new Date().toLocaleDateString('zh-TW');
-        const todayRecords = recordsList.filter(r => r.date === today);
-        document.getElementById('stat-total').innerText = todayRecords.length;
-        document.getElementById('stat-wash').innerText = todayRecords.filter(r => r.wash === '是').length;
-        document.getElementById('record-count-text').innerText = `共 ${recordsList.length} 筆`;
-    }
-
-    function renderRecords() {
-        const container = document.getElementById('records-container');
-        if (recordsList.length === 0) {
-            container.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 40px 0;">目前無接待紀錄</p>`;
-            return;
-        }
-
-        container.innerHTML = recordsList.map(r => `
-            <div class="record-card" onclick="openDetail('${r.id}')">
-                <div class="record-header">
-                    <span class="record-plate">${r.plate}</span>
-                    <span style="font-size:12px; color:#64748b;">${r.date} ${r.time}</span>
-                </div>
-                ${r.mainPhoto ? `<img src="${r.mainPhoto}" class="record-photo">` : ''}
-                <div style="font-size: 13px; color: #475569; display:flex; flex-direction:column; gap:4px; margin-top:8px;">
-                    <div>洗車：<strong>${r.wash}</strong> ｜ 里程：${r.mileage} km</div>
-                    <div style="color: ${r.damageText !== '無標記' ? '#d97706' : '#10b981'}">
-                        車損：<strong>${r.damageText}</strong>
+                    <!-- Top Bar: Tag -->
+                    <div class="relative z-10 p-6 flex justify-between items-center">
+                        <div id="cardTagBadge" class="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg tracking-wider border border-blue-400/30">
+                            【 關心市民 · 隨時守護 】
+                        </div>
+                        <div class="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
+                            Official Card
+                        </div>
                     </div>
-                    <div>備註：${r.notes}</div>
+
+                    <!-- Middle Content Area: Title & Subtitle + Character Image overlapping -->
+                    <div class="relative z-10 px-6 flex-1 flex flex-col justify-center space-y-3">
+                        
+                        <!-- Avatar Watermark/Image Layer -->
+                        <div id="avatarContainer" class="absolute right-4 bottom-0 w-64 h-full pointer-events-none flex items-end justify-end overflow-hidden opacity-90 transition-all duration-300">
+                            <img id="previewAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600" class="object-cover object-top h-[95%] w-full mask-image-gradient" crossorigin="anonymous" onerror="this.src='https://placehold.co/400x600/1e293b/94a3b8?text=Photo'">
+                        </div>
+
+                        <!-- Text Information Container -->
+                        <div id="textContentWrapper" class="max-w-[70%] space-y-3 relative z-25 transition-all duration-300">
+                            <h2 id="previewTitle" class="text-2xl font-black leading-snug tracking-tight text-white drop-shadow-md">
+                                雨勢漸大！出門請注意安全，減速慢行
+                            </h2>
+                            <p id="previewSubtitle" class="text-xs leading-relaxed text-slate-300 drop-shadow font-medium">
+                                氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離，平安就是給家人最好的承諾。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bar: Politician Info & Service Hotline -->
+                    <div class="relative z-10 p-6 pt-4 flex justify-between items-end bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                        <div class="flex items-center space-x-3">
+                            <div id="cardAvatarMini" class="w-12 h-12 rounded-full border-2 border-blue-400 overflow-hidden shadow-md bg-slate-800 flex-shrink-0">
+                                <img id="previewAvatarMiniImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" class="w-full h-full object-cover object-top" crossorigin="anonymous">
+                            </div>
+                            <div>
+                                <div id="previewName" class="text-base font-bold tracking-wide text-white drop-shadow">立法委員 參選人</div>
+                                <div id="previewTitleRole" class="text-[11px] text-blue-300 font-semibold tracking-wider">為您打拼 每一刻</div>
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">服務專線</div>
+                            <div id="previewContact" class="text-xs font-black tracking-wider text-blue-400 bg-black/40 px-2.5 py-1 rounded-lg border border-blue-500/30">
+                                0800-READY
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Accent Stripe -->
+                    <div id="bottomStripe" class="h-2 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
+
                 </div>
-            </div>
-        `).join('');
-    }
 
-    function openDetail(id) {
-        const r = recordsList.find(x => x.id === id);
-        if(!r) return;
+            </div>
 
-        const content = document.getElementById('detail-content');
-        let damagePhotosHtml = r.damagePhotos && r.damagePhotos.length > 0 ? r.damagePhotos.map(p => `<img src="${p}" style="width:100%; border-radius:6px; margin-bottom:6px;">`).join('') : '<span style="font-size:12px; color:#94a3b8;">無相片</span>';
-        let issuePhotosHtml = r.issuePhotos && r.issuePhotos.length > 0 ? r.issuePhotos.map(p => `<img src="${p}" style="width:100%; border-radius:6px; margin-bottom:6px;">`).join('') : '<span style="font-size:12px; color:#94a3b8;">無相片</span>';
+            <!-- Download Button -->
+            <button onclick="downloadCard()" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-xl flex items-center justify-center gap-2 transition transform active:scale-95">
+                <i class="fa-solid fa-download"></i> 下載高清圖卡 (PNG)
+            </button>
+        </div>
 
-        content.innerHTML = `
-            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 26px; font-weight: bold; color: var(--primary-blue); text-align: center; letter-spacing: 1px;">${r.plate}</div>
-                <div style="text-align: center; font-size: 12px; color: #64748b; margin-bottom: 10px;">進廠時間：${r.date} ${r.time}</div>
-                ${r.mainPhoto ? `<img src="${r.mainPhoto}" style="width:100%; border-radius:8px;">` : ''}
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px;">
-                <p><strong>洗車服務：</strong>${r.wash}</p>
-                <p style="margin-top:4px;"><strong>里程數：</strong>${r.mileage} km</p>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px;">
-                <p style="color: #d97706; font-weight:bold;">車損標記：${r.damageText}</p>
-                <div style="margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
-                    <div style="font-size: 12px; font-weight:bold; margin-bottom: 4px;">車損照片：</div>
-                    ${damagePhotosHtml}
-                </div>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px;">
-                <p><strong>備註/事項：</strong><br>${r.notes}</p>
-                <div style="margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
-                    <div style="font-size: 12px; font-weight:bold; margin-bottom: 4px;">問題照片：</div>
-                    ${issuePhotosHtml}
-                </div>
-            </div>
-        `;
+    </main>
 
-        document.getElementById('btn-delete-record').onclick = function() {
-            if(confirm('確定要刪除這筆接待紀錄嗎？')) {
-                db.child(id).remove();
-                closeModal('detail-modal');
+    <script>
+        let currentTheme = 'blue';
+        let currentAspect = 'square';
+        let currentAvatarSize = 'small'; // default to small/refined photo
+
+        const themes = {
+            blue: {
+                from: 'from-slate-900',
+                via: 'via-blue-950',
+                to: 'to-indigo-950',
+                badgeBg: 'bg-blue-600',
+                badgeBorder: 'border-blue-400/30',
+                stripe: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400',
+                glow1: 'bg-blue-600/30',
+                glow2: 'bg-indigo-600/20',
+                roleColor: 'text-blue-300',
+                contactBg: 'bg-black/40 border-blue-500/30 text-blue-400',
+                miniBorder: 'border-blue-400'
+            },
+            green: {
+                from: 'from-slate-900',
+                via: 'via-emerald-950',
+                to: 'to-teal-950',
+                badgeBg: 'bg-emerald-600',
+                badgeBorder: 'border-emerald-400/30',
+                stripe: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-400',
+                glow1: 'bg-emerald-600/30',
+                glow2: 'bg-teal-600/20',
+                roleColor: 'text-emerald-300',
+                contactBg: 'bg-black/40 border-emerald-500/30 text-emerald-400',
+                miniBorder: 'border-emerald-400'
+            },
+            orange: {
+                from: 'from-slate-900',
+                via: 'via-amber-950',
+                to: 'to-orange-950',
+                badgeBg: 'bg-amber-600',
+                badgeBorder: 'border-amber-400/30',
+                stripe: 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400',
+                glow1: 'bg-amber-600/30',
+                glow2: 'bg-orange-600/20',
+                roleColor: 'text-amber-300',
+                contactBg: 'bg-black/40 border-amber-500/30 text-amber-400',
+                miniBorder: 'border-amber-400'
+            },
+            dark: {
+                from: 'from-slate-950',
+                via: 'via-slate-900',
+                to: 'from-slate-950',
+                badgeBg: 'bg-slate-700',
+                badgeBorder: 'border-slate-500/30',
+                stripe: 'bg-gradient-to-r from-slate-400 via-slate-200 to-slate-500',
+                glow1: 'bg-slate-600/20',
+                glow2: 'bg-slate-500/10',
+                roleColor: 'text-slate-300',
+                contactBg: 'bg-black/40 border-slate-500/30 text-slate-300',
+                miniBorder: 'border-slate-500'
             }
         };
 
-        document.getElementById('detail-modal').style.display = 'flex';
-    }
-</script>
+        function setTheme(themeName) {
+            currentTheme = themeName;
+            ['blue', 'green', 'orange', 'dark'].forEach(t => {
+                const btn = document.getElementById(`theme-${t}`);
+                if (t === themeName) {
+                    btn.className = `py-2 px-3 rounded-xl border border-blue-500 bg-${t === 'blue' ? 'blue' : t === 'green' ? 'emerald' : t === 'orange' ? 'amber' : 'slate'}-900/40 text-xs font-bold text-center transition shadow`;
+                } else {
+                    btn.className = 'py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-center transition opacity-70';
+                }
+            });
+            applyThemeToCard();
+        }
 
+        function applyThemeToCard() {
+            const card = document.getElementById('captureCard');
+            const theme = themes[currentTheme];
+            card.className = `relative w-[480px] bg-gradient-to-br ${theme.from} ${theme.via} ${theme.to} text-white flex flex-col justify-between overflow-hidden shadow-2xl transition-all duration-300 flex-shrink-0 ${currentAspect === 'square' ? 'h-[480px]' : 'h-[853px]'}`;
+
+            document.getElementById('cardTagBadge').className = `${theme.badgeBg} text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg tracking-wider border ${theme.badgeBorder}`;
+            document.getElementById('bgGlow1').className = `absolute -top-20 -right-20 w-80 h-80 ${theme.glow1} rounded-full blur-3xl pointer-events-none transition-colors duration-500`;
+            document.getElementById('bgGlow2').className = `absolute bottom-0 -left-20 w-80 h-80 ${theme.glow2} rounded-full blur-3xl pointer-events-none transition-colors duration-500`;
+            document.getElementById('previewTitleRole').className = `text-[11px] ${theme.roleColor} font-semibold tracking-wider`;
+            document.getElementById('previewContact').className = `text-xs font-black tracking-wider ${theme.contactBg} px-2.5 py-1 rounded-lg border`;
+            document.getElementById('cardAvatarMini').className = `w-12 h-12 rounded-full border-2 ${theme.miniBorder} overflow-hidden shadow-md bg-slate-800 flex-shrink-0`;
+            document.getElementById('bottomStripe').className = `h-2 w-full ${theme.stripe}`;
+        }
+
+        function setAspect(aspect) {
+            currentAspect = aspect;
+            const card = document.getElementById('captureCard');
+            const sqBtn = document.getElementById('aspect-square');
+            const stBtn = document.getElementById('aspect-story');
+
+            if (aspect === 'square') {
+                card.style.height = '480px';
+                sqBtn.className = 'py-2 px-3 rounded-xl border border-blue-500 bg-blue-600/20 text-xs font-bold transition flex items-center justify-center gap-2 shadow';
+                stBtn.className = 'py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold transition flex items-center justify-center gap-2 opacity-70';
+            } else {
+                card.style.height = '853px';
+                stBtn.className = 'py-2 px-3 rounded-xl border border-blue-500 bg-blue-600/20 text-xs font-bold transition flex items-center justify-center gap-2 shadow';
+                sqBtn.className = 'py-2 px-3 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold transition flex items-center justify-center gap-2 opacity-70';
+            }
+        }
+
+        function setAvatarSize(size) {
+            currentAvatarSize = size;
+            const avatarContainer = document.getElementById('avatarContainer');
+            const textWrapper = document.getElementById('textContentWrapper');
+            const uploadSection = document.getElementById('avatarUploadSection');
+            
+            ['large', 'small', 'none'].forEach(s => {
+                const btn = document.getElementById(`size-${s}`);
+                if (s === size) {
+                    btn.className = 'py-2 px-2 rounded-xl border border-blue-500 bg-blue-600/20 text-[11px] font-bold text-center transition shadow';
+                } else {
+                    btn.className = 'py-2 px-2 rounded-xl border border-slate-700 bg-slate-900 text-[11px] font-bold text-center transition opacity-70';
+                }
+            });
+
+            if (size === 'large') {
+                avatarContainer.className = 'absolute right-0 bottom-0 w-72 h-full pointer-events-none flex items-end justify-end overflow-hidden opacity-95 transition-all duration-300';
+                textWrapper.className = 'max-w-[62%] space-y-3 relative z-25 transition-all duration-300';
+                uploadSection.classList.remove('hidden');
+            } else if (size === 'small') {
+                avatarContainer.className = 'absolute right-2 bottom-0 w-44 h-[75%] pointer-events-none flex items-end justify-end overflow-hidden opacity-80 transition-all duration-300';
+                textWrapper.className = 'max-w-[80%] space-y-3 relative z-25 transition-all duration-300';
+                uploadSection.classList.remove('hidden');
+            } else {
+                avatarContainer.className = 'hidden';
+                textWrapper.className = 'max-w-[92%] space-y-3 relative z-25 transition-all duration-300';
+                uploadSection.classList.add('hidden');
+            }
+        }
+
+        function switchImageTab(mode) {
+            const urlBtn = document.getElementById('tabUrlBtn');
+            const fileBtn = document.getElementById('tabFileBtn');
+            const urlContainer = document.getElementById('imageUrlContainer');
+            const fileContainer = document.getElementById('imageFileContainer');
+
+            if (mode === 'url') {
+                urlBtn.className = 'py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow';
+                fileBtn.className = 'py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+                urlContainer.classList.remove('hidden');
+                fileContainer.classList.add('hidden');
+            } else {
+                fileBtn.className = 'py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow';
+                urlBtn.className = 'py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+                fileContainer.classList.remove('hidden');
+                urlContainer.classList.add('hidden');
+            }
+        }
+
+        function updateAvatarFromUrl() {
+            const url = document.getElementById('inputAvatarUrl').value;
+            if (url) {
+                document.getElementById('previewAvatarImg').src = url;
+                document.getElementById('previewAvatarMiniImg').src = url;
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64 = e.target.result;
+                    document.getElementById('previewAvatarImg').src = base64;
+                    document.getElementById('previewAvatarMiniImg').src = base64;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateCard() {
+            document.getElementById('cardTagBadge').innerText = document.getElementById('inputTag').value;
+            document.getElementById('previewTitle').innerText = document.getElementById('inputTitle').value;
+            document.getElementById('previewSubtitle').innerText = document.getElementById('inputSubtitle').value;
+            document.getElementById('previewName').innerText = document.getElementById('inputName').value;
+            document.getElementById('previewTitleRole').innerText = document.getElementById('inputTitleRole').value;
+            document.getElementById('previewContact').innerText = document.getElementById('inputContact').value;
+
+            const stripe = document.getElementById('bottomStripe');
+            if (document.getElementById('toggleStripe').checked) {
+                stripe.classList.remove('hidden');
+            } else {
+                stripe.classList.add('hidden');
+            }
+        }
+
+        function loadTemplate(type) {
+            if (type === 'rain') {
+                setTheme('blue');
+                document.getElementById('inputTag').value = '【 關心市民 · 隨時守護 】';
+                document.getElementById('inputTitle').value = '雨勢漸大！出門請注意安全，減速慢行';
+                document.getElementById('inputSubtitle').value = '氣象署持續發布豪大雨特報，低窪地區請慎防積淹水。行車請保持安全距離，平安就是給家人最好的承諾。';
+                document.getElementById('inputTitleRole').value = '為您打拼 每一刻';
+            } else if (type === 'urgent') {
+                setTheme('orange');
+                document.getElementById('inputTag').value = '【 ⚠️ 緊急公告 · 立刻注意 】';
+                document.getElementById('inputTitle').value = '選區道路路平改善工程施工通知';
+                document.getElementById('inputSubtitle').value = '因應管線老舊更新，本周三起進行封路刨鋪作業，請用路人提前改道行駛，造成不便敬請見諒。';
+                document.getElementById('inputTitleRole').value = '為民喉舌 嚴格監督';
+            } else if (type === 'policy') {
+                setTheme('green');
+                document.getElementById('inputTag').value = '【 地方會勘 · 爭取建設 】';
+                document.getElementById('inputTitle').value = '成功爭取經費！全方位升級人行道與照明';
+                document.getElementById('inputSubtitle').value = '實地走訪基層，邀集市府局處會勘，為鄉親解決長年燈光昏暗與通行安全問題，讓生活更有品質。';
+                document.getElementById('inputTitleRole').value = '專業問政 行動實踐';
+            }
+            updateCard();
+        }
+
+        function downloadCard() {
+            const cardElement = document.getElementById('captureCard');
+            html2canvas(cardElement, {
+                scale: 3,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `政治人物宣傳圖卡_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error("匯出圖片失敗：", err);
+            });
+        }
+    </script>
 </body>
 </html>
