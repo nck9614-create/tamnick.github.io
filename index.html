@@ -17,7 +17,7 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- Babel CDN (用於在瀏覽器編譯 JSX) -->
+  <!-- Babel CDN -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-neutral-950 text-neutral-100 min-h-screen font-sans select-none antialiased">
@@ -26,7 +26,7 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // --- 圖示元件 (SVG) ---
+    // --- SVG 圖示元件 ---
     const IconCar = () => (
       <svg className="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2m14 0a2 2 0 100 4 2 2 0 000-4zm-12 0a2 2 0 100 4 2 2 0 000-4z" />
@@ -43,6 +43,18 @@
     const IconClipboard = () => (
       <svg className="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+    );
+
+    const IconSun = () => (
+      <svg className="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    );
+
+    const IconCoffee = () => (
+      <svg className="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3" />
       </svg>
     );
 
@@ -82,11 +94,20 @@
       </svg>
     );
 
-    // --- 主程式 APP ---
+    // 預設例行作息
+    const defaultRoutines = [
+      { id: 1, time: '08:30', title: '晨會與早班交接', done: false, type: '例行' },
+      { id: 2, time: '09:00', title: '接待高峰預備與車位確認', done: false, type: '例行' },
+      { id: 3, time: '12:00', title: '午休與用餐時間', done: false, type: '休息' },
+      { id: 4, time: '14:00', title: '下午車輛進度關懷與回報', done: false, type: '例行' },
+      { id: 5, time: '17:00', title: '結帳與交車高峰', done: false, type: '例行' },
+      { id: 6, time: '17:30', title: '盤點今日車輛與結案匯報', done: false, type: '例行' }
+    ];
+
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
       
-      // 自動從 localStorage 讀取紀錄（完全不帶任何範本）
+      // 車輛任務資料庫
       const [tasks, setTasks] = useState(() => {
         try {
           const saved = localStorage.getItem('lexus_hub_tasks');
@@ -96,31 +117,57 @@
         }
       });
 
-      // 自動同步更新至 localStorage
+      // 作息資料庫
+      const [routines, setRoutines] = useState(() => {
+        try {
+          const saved = localStorage.getItem('lexus_hub_routines');
+          return saved ? JSON.parse(saved) : defaultRoutines;
+        } catch (e) {
+          return defaultRoutines;
+        }
+      });
+
+      // 上下班時間設定
+      const [shiftSettings, setShiftSettings] = useState(() => {
+        try {
+          const saved = localStorage.getItem('lexus_hub_shift');
+          return saved ? JSON.parse(saved) : { start: '08:30', end: '17:30', lunch: '12:00 - 13:00' };
+        } catch (e) {
+          return { start: '08:30', end: '17:30', lunch: '12:00 - 13:00' };
+        }
+      });
+
+      // 自動同步儲存
       useEffect(() => {
         try {
           localStorage.setItem('lexus_hub_tasks', JSON.stringify(tasks));
-        } catch (e) {
-          console.error('儲存失敗', e);
-        }
+        } catch (e) {}
       }, [tasks]);
 
+      useEffect(() => {
+        try {
+          localStorage.setItem('lexus_hub_routines', JSON.stringify(routines));
+        } catch (e) {}
+      }, [routines]);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('lexus_hub_shift', JSON.stringify(shiftSettings));
+        } catch (e) {}
+      }, [shiftSettings]);
+
       const [modalOpen, setModalOpen] = useState(false);
+      const [routineModalOpen, setRoutineModalOpen] = useState(false);
       const [editingId, setEditingId] = useState(null);
       const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
+      // 新增作息表單 State
+      const [newRoutine, setNewRoutine] = useState({ time: '09:00', title: '', type: '例行' });
+
+      // 車輛表單 State
       const [formData, setFormData] = useState({
-        plate: '',
-        owner: '',
-        model: 'RX 350',
-        category: '定保',
-        priority: '中',
-        stage: '初步報告',
-        timeSlot: '09:00',
-        estimatedFinish: '',
-        notes: '',
-        insuranceCompany: '',
-        costType: '自費'
+        plate: '', owner: '', model: 'RX 350', category: '定保',
+        priority: '中', stage: '初步報告', timeSlot: '09:00', estimatedFinish: '', notes: ''
       });
 
       const categories = ['定保', '鈑噴(保險)', '鈑噴(自費)', '一般維修'];
@@ -129,17 +176,8 @@
       const handleOpenAdd = () => {
         setEditingId(null);
         setFormData({
-          plate: '',
-          owner: '',
-          model: 'RX 350',
-          category: '定保',
-          priority: '中',
-          stage: '初步報告',
-          timeSlot: '09:00',
-          estimatedFinish: '',
-          notes: '',
-          insuranceCompany: '',
-          costType: '自費'
+          plate: '', owner: '', model: 'RX 350', category: '定保',
+          priority: '中', stage: '初步報告', timeSlot: '09:00', estimatedFinish: '', notes: ''
         });
         setModalOpen(true);
       };
@@ -150,7 +188,7 @@
         setModalOpen(true);
       };
 
-      const handleSave = (e) => {
+      const handleSaveTask = (e) => {
         e.preventDefault();
         if (!formData.plate || !formData.owner) {
           alert('請填寫車牌與車主姓名');
@@ -160,18 +198,12 @@
         if (editingId !== null) {
           setTasks(tasks.map(t => t.id === editingId ? { ...formData, id: editingId } : t));
         } else {
-          const newTask = {
-            ...formData,
-            id: Date.now()
-          };
-          setTasks([newTask, ...tasks]);
+          setTasks([{ ...formData, id: Date.now() }, ...tasks]);
         }
         setModalOpen(false);
       };
 
-      const askDelete = (id) => {
-        setDeleteConfirmId(id);
-      };
+      const askDelete = (id) => setDeleteConfirmId(id);
 
       const confirmDelete = () => {
         if (deleteConfirmId !== null) {
@@ -183,14 +215,35 @@
       const advanceStage = (id) => {
         setTasks(tasks.map(t => {
           if (t.id === id) {
-            const currentIndex = stages.indexOf(t.stage);
-            if (currentIndex < stages.length - 1) {
-              return { ...t, stage: stages[currentIndex + 1] };
-            }
+            const idx = stages.indexOf(t.stage);
+            if (idx < stages.length - 1) return { ...t, stage: stages[idx + 1] };
           }
           return t;
         }));
       };
+
+      // 作息開關切換
+      const toggleRoutine = (id) => {
+        setRoutines(routines.map(r => r.id === id ? { ...r, done: !r.done } : r));
+      };
+
+      // 刪除作息
+      const deleteRoutine = (id) => {
+        setRoutines(routines.filter(r => r.id !== id));
+      };
+
+      // 新增作息項目
+      const handleAddRoutine = (e) => {
+        e.preventDefault();
+        if (!newRoutine.title) return;
+        setRoutines([...routines, { ...newRoutine, id: Date.now(), done: false }]);
+        setNewRoutine({ time: '09:00', title: '', type: '例行' });
+        setRoutineModalOpen(false);
+      };
+
+      // 計算作息完成率
+      const completedRoutines = routines.filter(r => r.done).length;
+      const routinePercent = routines.length > 0 ? Math.round((completedRoutines / routines.length) * 100) : 0;
 
       const totalToday = tasks.length;
       const stage1Count = tasks.filter(t => t.stage === '初步報告').length;
@@ -209,15 +262,24 @@
               </div>
               <div>
                 <h1 className="text-sm font-bold tracking-wider text-amber-400">LEXUS ELITE HUB</h1>
-                <p className="text-[10px] text-neutral-400">專員時間管理與進度追蹤</p>
+                <p className="text-[10px] text-neutral-400">專員時間與作息管理</p>
               </div>
             </div>
-            <button 
-              onClick={handleOpenAdd}
-              className="bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 rounded-full text-xs font-bold flex items-center shadow-lg transition-transform active:scale-95"
-            >
-              <IconPlus /> <span className="ml-1">新增車輛</span>
-            </button>
+            {activeTab !== 'schedule' ? (
+              <button 
+                onClick={handleOpenAdd}
+                className="bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 rounded-full text-xs font-bold flex items-center shadow-lg transition-transform active:scale-95"
+              >
+                <IconPlus /> <span className="ml-1">新增車輛</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => setRoutineModalOpen(true)}
+                className="bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 rounded-full text-xs font-bold flex items-center shadow-lg transition-transform active:scale-95"
+              >
+                <IconPlus /> <span className="ml-1">新增作息</span>
+              </button>
+            )}
           </header>
 
           {/* 數據看板 */}
@@ -244,33 +306,40 @@
 
           {/* 內容區 */}
           <main className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+            
+            {/* 三頁面切換分頁 */}
             <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800 mb-2">
               <button 
                 onClick={() => setActiveTab('dashboard')} 
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1 ${activeTab === 'dashboard' ? 'bg-amber-500 text-black shadow' : 'text-neutral-400 hover:text-white'}`}
+                className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center space-x-1 ${activeTab === 'dashboard' ? 'bg-amber-500 text-black shadow' : 'text-neutral-400 hover:text-white'}`}
               >
-                <IconClock /> <span>時間排程管理</span>
+                <IconClock /> <span>排程</span>
               </button>
               <button 
                 onClick={() => setActiveTab('list')} 
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1 ${activeTab === 'list' ? 'bg-amber-500 text-black shadow' : 'text-neutral-400 hover:text-white'}`}
+                className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center space-x-1 ${activeTab === 'list' ? 'bg-amber-500 text-black shadow' : 'text-neutral-400 hover:text-white'}`}
               >
-                <IconClipboard /> <span>全車輛清單 ({totalToday})</span>
+                <IconClipboard /> <span>清單 ({totalToday})</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('schedule')} 
+                className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center space-x-1 ${activeTab === 'schedule' ? 'bg-amber-500 text-black shadow' : 'text-neutral-400 hover:text-white'}`}
+              >
+                <IconSun /> <span>作息管理</span>
               </button>
             </div>
 
-            {activeTab === 'dashboard' ? (
+            {/* TAB 1: 時間排程 */}
+            {activeTab === 'dashboard' && (
               <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">今日時間軸與行程</h2>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">今日車輛進度時間軸</h2>
                   <span className="text-xs text-amber-400">按時段排序</span>
                 </div>
 
                 {tasks.length === 0 ? (
                   <div className="text-center py-12 text-neutral-500 bg-neutral-950 rounded-2xl border border-neutral-800">
-                    <div className="text-amber-500/40 mb-2">
-                      <IconCar />
-                    </div>
+                    <div className="text-amber-500/40 mb-2"><IconCar /></div>
                     <p className="text-sm font-bold text-neutral-300">目前尚無車輛資料</p>
                     <p className="text-xs text-neutral-500 mt-1">點擊右上角「新增車輛」開始紀錄</p>
                   </div>
@@ -347,7 +416,10 @@
                   ))
                 )}
               </div>
-            ) : (
+            )}
+
+            {/* TAB 2: 全車輛清單 */}
+            {activeTab === 'list' && (
               <div className="space-y-3">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 px-1">全部車輛總覽</h2>
                 {tasks.length === 0 ? (
@@ -376,7 +448,165 @@
                 )}
               </div>
             )}
+
+            {/* TAB 3: 作息管理 (NEW!) */}
+            {activeTab === 'schedule' && (
+              <div className="space-y-4">
+                
+                {/* 班表與時間概覽卡片 */}
+                <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xs font-bold text-amber-400 tracking-wider flex items-center space-x-1">
+                      <IconSun /> <span>今日作息概況</span>
+                    </h2>
+                    <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 font-bold">
+                      完成率 {routinePercent}%
+                    </span>
+                  </div>
+
+                  {/* 進度條 */}
+                  <div className="w-full bg-neutral-900 h-2 rounded-full overflow-hidden border border-neutral-800">
+                    <div 
+                      className="bg-gradient-to-r from-amber-600 to-amber-400 h-full transition-all duration-300"
+                      style={{ width: `${routinePercent}%` }}
+                    ></div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center pt-1 text-xs">
+                    <div className="bg-neutral-900 p-2 rounded-xl border border-neutral-800/80">
+                      <span className="text-[10px] text-neutral-500 block">上班時間</span>
+                      <span className="font-mono text-white font-bold">{shiftSettings.start}</span>
+                    </div>
+                    <div className="bg-neutral-900 p-2 rounded-xl border border-neutral-800/80">
+                      <span className="text-[10px] text-neutral-500 block">午休時段</span>
+                      <span className="font-mono text-amber-400 font-bold">{shiftSettings.lunch}</span>
+                    </div>
+                    <div className="bg-neutral-900 p-2 rounded-xl border border-neutral-800/80">
+                      <span className="text-[10px] text-neutral-500 block">預計下班</span>
+                      <span className="font-mono text-white font-bold">{shiftSettings.end}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 今日例行工作與打卡清單 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">日常例行打卡清單</h3>
+                    <span className="text-[10px] text-neutral-500">點擊完成打卡</span>
+                  </div>
+
+                  {[...routines].sort((a, b) => a.time.localeCompare(b.time)).map((routine) => (
+                    <div 
+                      key={routine.id} 
+                      className={`p-3.5 rounded-xl border flex justify-between items-center transition-all ${
+                        routine.done 
+                          ? 'bg-neutral-950/50 border-neutral-800/80 text-neutral-500 opacity-60' 
+                          : 'bg-neutral-950 border-neutral-800 text-white shadow-md'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 cursor-pointer flex-1" onClick={() => toggleRoutine(routine.id)}>
+                        <input 
+                          type="checkbox" 
+                          checked={routine.done}
+                          onChange={() => {}}
+                          className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                        />
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                              {routine.time}
+                            </span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              routine.type === '休息' ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800 text-neutral-400'
+                            }`}>
+                              {routine.type}
+                            </span>
+                          </div>
+                          <p className={`text-sm font-medium mt-1 ${routine.done ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>
+                            {routine.title}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => deleteRoutine(routine.id)}
+                        className="p-1.5 text-neutral-500 hover:text-red-400 transition-colors"
+                      >
+                        <IconTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            )}
           </main>
+
+          {/* 新增作息 Modal */}
+          {routineModalOpen && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-neutral-900 w-full max-w-xs rounded-2xl border border-neutral-800 p-5 space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-neutral-800 pb-2">
+                  <h3 className="text-sm font-bold text-amber-400">新增每日作息</h3>
+                  <button onClick={() => setRoutineModalOpen(false)} className="text-neutral-400"><IconX /></button>
+                </div>
+
+                <form onSubmit={handleAddRoutine} className="space-y-3">
+                  <div>
+                    <label className="text-xs text-neutral-400 block mb-1">時間</label>
+                    <input 
+                      type="time" 
+                      value={newRoutine.time}
+                      onChange={(e) => setNewRoutine({ ...newRoutine, time: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-neutral-400 block mb-1">類型</label>
+                    <select 
+                      value={newRoutine.type}
+                      onChange={(e) => setNewRoutine({ ...newRoutine, type: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                    >
+                      <option value="例行">例行工作</option>
+                      <option value="休息">休息/用餐</option>
+                      <option value="會議">會議</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-neutral-400 block mb-1">作息名稱</label>
+                    <input 
+                      type="text" 
+                      placeholder="例如: 晨間廠區巡檢"
+                      value={newRoutine.title}
+                      onChange={(e) => setNewRoutine({ ...newRoutine, title: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex space-x-2 pt-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setRoutineModalOpen(false)}
+                      className="flex-1 bg-neutral-800 text-neutral-300 py-2.5 rounded-xl font-bold text-xs"
+                    >
+                      取消
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="flex-1 bg-amber-500 text-black py-2.5 rounded-xl font-bold text-xs shadow-lg"
+                    >
+                      新增作息
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* 刪除確認彈窗 */}
           {deleteConfirmId !== null && (
@@ -390,16 +620,10 @@
                   <p className="text-xs text-neutral-400 mt-1">刪除後此車輛資料將無法復原。</p>
                 </div>
                 <div className="flex space-x-2 pt-2">
-                  <button 
-                    onClick={() => setDeleteConfirmId(null)}
-                    className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 py-2.5 rounded-xl font-bold text-xs"
-                  >
+                  <button onClick={() => setDeleteConfirmId(null)} className="flex-1 bg-neutral-800 text-neutral-300 py-2.5 rounded-xl font-bold text-xs">
                     取消
                   </button>
-                  <button 
-                    onClick={confirmDelete}
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-lg"
-                  >
+                  <button onClick={confirmDelete} className="flex-1 bg-red-500 text-white py-2.5 rounded-xl font-bold text-xs shadow-lg">
                     確定刪除
                   </button>
                 </div>
@@ -420,7 +644,7 @@
                   </button>
                 </div>
 
-                <form onSubmit={handleSave} className="space-y-3">
+                <form onSubmit={handleSaveTask} className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-neutral-400 block mb-1">車牌號碼 *</label>
@@ -502,32 +726,6 @@
                       </select>
                     </div>
                   </div>
-
-                  {formData.category.includes('鈑噴') && (
-                    <div className="grid grid-cols-2 gap-3 bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                      <div>
-                        <label className="text-xs text-neutral-400 block mb-1">費用性質</label>
-                        <select 
-                          value={formData.costType}
-                          onChange={(e) => setFormData({ ...formData, costType: e.target.value })}
-                          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-xs text-white"
-                        >
-                          <option value="保險出險">保險出險</option>
-                          <option value="自費">車主自費</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-400 block mb-1">保險公司名稱</label>
-                        <input 
-                          type="text" 
-                          placeholder="例如: 富邦產險"
-                          value={formData.insuranceCompany}
-                          onChange={(e) => setFormData({ ...formData, insuranceCompany: e.target.value })}
-                          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-xs text-white"
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   <div>
                     <label className="text-xs text-neutral-400 block mb-1">預計完工時間</label>
